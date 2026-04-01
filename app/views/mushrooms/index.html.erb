@@ -1,7 +1,7 @@
 <%= form_tag(score_mushrooms_path, method: :post, id: "score-form") do %>
   <%= hidden_field_tag :lang, @lang %>
 
-  <h2 class="section-title"><%= raw("&#x1F344;") %> <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
+  <h2 class="section-title">🍄‍🟫 <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
 
   <div class="species-grid">
     <% @species.each do |key, species| %>
