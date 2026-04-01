@@ -200,7 +200,7 @@ class ScoringEngine
         "temperatură ideală (#{temp}°C)"
       elsif scores[:temperature] >= 12
         "temperatură acceptabilă (#{temp}°C)"
-      elsif temp < temp_range[:abs_min]
+      elsif temp < temp_range[:ideal_min]
         "prea frig (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
       else
         "prea cald (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
@@ -210,7 +210,7 @@ class ScoringEngine
         "precipitații excelente (#{rain_mm}mm)"
       elsif scores[:rain] >= 12
         "precipitații decente (#{rain_mm}mm)"
-      elsif rain_mm < rain_range[:abs_min]
+      elsif rain_mm < rain_range[:ideal_min]
         "prea uscat (#{rain_mm}mm, necesită #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
       else
         "prea umed (#{rain_mm}mm, ideal #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
@@ -232,7 +232,7 @@ class ScoringEngine
         "ideal temperature (#{temp}°C)"
       elsif scores[:temperature] >= 12
         "acceptable temperature (#{temp}°C)"
-      elsif temp < temp_range[:abs_min]
+      elsif temp < temp_range[:ideal_min]
         "too cold (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
       else
         "too warm (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
@@ -242,7 +242,7 @@ class ScoringEngine
         "great rainfall (#{rain_mm}mm)"
       elsif scores[:rain] >= 12
         "decent rainfall (#{rain_mm}mm)"
-      elsif rain_mm < rain_range[:abs_min]
+      elsif rain_mm < rain_range[:ideal_min]
         "too dry (#{rain_mm}mm, needs #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
       else
         "too wet (#{rain_mm}mm, ideal is #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
