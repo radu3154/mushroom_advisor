@@ -25,7 +25,7 @@
 
   <!-- Score Breakdown -->
   <div class="breakdown">
-    <% max_scores = { season: 20, temperature: 30, rain: 30, timing: 20 } %>
+    <% max_scores = { season: 25, temperature: 25, rain: 25, timing: 25 } %>
     <% stats = @result[:weather_stats] || {} %>
     <% breakdown_labels = {
       season: I18nHelper.t(:season, @lang),
