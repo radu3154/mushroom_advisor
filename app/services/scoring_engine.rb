@@ -90,36 +90,59 @@ class ScoringEngine
 
   private
 
-  # --- Season (0–25) ---
-  # In season = 25, out of season = 0 (no "adjacent" fudging)
+  # --- Season (0–30) ---
+  # In season = 30, out of season = 0 (no "adjacent" fudging)
   def score_season
-    @species[:season_months].include?(@weather[:current_month]) ? 25 : 0
+    @species[:season_months].include?(@weather[:current_month]) ? 30 : 0
   end
 
-  # --- Temperature (0–25) ---
-  # Smooth gradient: 0 at abs boundary → 25 at ideal boundary (no cliff)
+  # --- Temperature (0–30) ---
   def score_temperature
-    score_range_smooth(@weather[:avg_temp], @species[:temp_range], 25)
+    score_range_smooth(@weather[:avg_temp], @species[:temp_range], 30)
   end
 
-  # --- Rain last 7 days (0–25) ---
+  # --- Rain last 7 days (0–30) ---
   def score_rain
-    score_range_smooth(@weather[:total_rain_7d], @species[:rain_range], 25)
+    score_range_smooth(@weather[:total_rain_7d], @species[:rain_range], 30)
   end
 
-  # --- Timing after rain (0–25) ---
+  # --- Timing after rain (0–10) ---
+  # Lightest factor — mushrooms grow in rainy periods too, timing is a bonus
   def score_timing
-    score_range_smooth(@weather[:days_since_rain], @species[:delay_days], 25)
+    score_range_smooth(@weather[:days_since_rain], @species[:delay_days], 10)
   end
 
   # Scoring for a value within a range spec.
-  # Inside ideal → max_score (25). Between abs and ideal → 5 (marginal).
-  # Outside abs → 0 (impossible conditions).
+  # Sweet spot (center of ideal) → max_score, edges of ideal → ~48% of max.
+  # Marginal zone: gradient from just below floor near ideal edge → 1 at abs edge.
+  # Outside abs → 0.
+  IDEAL_FLOOR_RATIO = 0.48
+
   def score_range_smooth(value, range, max_score)
+    floor = (max_score * IDEAL_FLOOR_RATIO).round
+
     if value.between?(range[:ideal_min], range[:ideal_max])
-      max_score
+      # Inside ideal range: gradient from floor at edges to max_score at center
+      center = (range[:ideal_min] + range[:ideal_max]) / 2.0
+      half_width = (range[:ideal_max] - range[:ideal_min]) / 2.0
+      if half_width == 0
+        max_score
+      else
+        distance = (value - center).abs
+        ratio = 1.0 - (distance / half_width)
+        (floor + ratio * (max_score - floor)).round
+      end
     elsif value.between?(range[:abs_min], range[:abs_max])
-      5
+      # Marginal zone: gradient from (floor - 1) near ideal edge → 1 near abs edge
+      if value < range[:ideal_min]
+        width = range[:ideal_min] - range[:abs_min]
+        ratio = width > 0 ? (value - range[:abs_min]) / width.to_f : 0
+      else
+        width = range[:abs_max] - range[:ideal_max]
+        ratio = width > 0 ? (range[:abs_max] - value) / width.to_f : 0
+      end
+      marginal_top = [floor - 1, 1].max
+      (1 + ratio * (marginal_top - 1)).round
     else
       0
     end
@@ -148,9 +171,11 @@ class ScoringEngine
 
   # Only show "best time to go" when timing is the main limiting factor.
   # Hide when temperature or rain are problematic — waiting won't fix those.
-  # Both temp and rain must be in ideal range (25) for timing advice to make sense.
+  # Both temp and rain must be in ideal range (>= floor) for timing advice to make sense.
   def show_best_time?(total, scores)
-    total > 0 && scores[:temperature] == 25 && scores[:rain] == 25
+    temp_floor = (30 * IDEAL_FLOOR_RATIO).round
+    rain_floor = (30 * IDEAL_FLOOR_RATIO).round
+    total > 0 && scores[:temperature] >= temp_floor && scores[:rain] >= rain_floor
   end
 
   def zile(n)
@@ -212,72 +237,106 @@ class ScoringEngine
 
     parts = []
 
+    delay = @species[:delay_days]
+
     if @lang == "ro"
-      parts << (scores[:season] == 25 ? "sezon de vârf" : "în afara sezonului")
-
-      parts << if scores[:temperature] >= 20
-        "temperatură ideală (#{temp}°C)"
-      elsif scores[:temperature] >= 12
-        "temperatură acceptabilă (#{temp}°C)"
-      elsif temp < temp_range[:ideal_min]
-        "prea frig (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
-      else
-        "prea cald (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
-      end
-
-      parts << if scores[:rain] >= 20
-        "precipitații excelente (#{rain_mm}mm)"
-      elsif scores[:rain] >= 12
-        "precipitații decente (#{rain_mm}mm)"
-      elsif rain_mm < rain_range[:ideal_min]
-        "prea uscat (#{rain_mm}mm, necesită #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
-      else
-        "prea umed (#{rain_mm}mm, ideal #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
-      end
-
-      parts << if scores[:timing] >= 20
-        "moment perfect după ploaie"
-      elsif scores[:timing] >= 12
-        "timp acceptabil (#{days} #{zile(days)} de la ploaie)"
-      elsif days < @species[:delay_days][:ideal_min]
-        "prea devreme după ploaie (#{days} #{zile(days)})"
-      else
-        "prea mult de la ultima ploaie (#{days} #{zile(days)})"
-      end
+      parts << (scores[:season] >= 25 ? "sezon de vârf" : "în afara sezonului")
+      parts << temp_explanation_ro(temp, temp_range)
+      parts << rain_explanation_ro(rain_mm, rain_range)
+      parts << timing_explanation_ro(days, delay)
     else
-      parts << (scores[:season] == 25 ? "peak season" : "out of season")
-
-      parts << if scores[:temperature] >= 20
-        "ideal temperature (#{temp}°C)"
-      elsif scores[:temperature] >= 12
-        "acceptable temperature (#{temp}°C)"
-      elsif temp < temp_range[:ideal_min]
-        "too cold (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
-      else
-        "too warm (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
-      end
-
-      parts << if scores[:rain] >= 20
-        "great rainfall (#{rain_mm}mm)"
-      elsif scores[:rain] >= 12
-        "decent rainfall (#{rain_mm}mm)"
-      elsif rain_mm < rain_range[:ideal_min]
-        "too dry (#{rain_mm}mm, needs #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
-      else
-        "too wet (#{rain_mm}mm, ideal is #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
-      end
-
-      parts << if scores[:timing] >= 20
-        "perfect timing after rain"
-      elsif scores[:timing] >= 12
-        "okay timing (#{days} #{zile(days)} since rain)"
-      elsif days < @species[:delay_days][:ideal_min]
-        "too soon after rain (#{days} #{zile(days)} ago)"
-      else
-        "too long since rain (#{days} #{zile(days)} ago)"
-      end
+      parts << (scores[:season] >= 25 ? "peak season" : "out of season")
+      parts << temp_explanation_en(temp, temp_range)
+      parts << rain_explanation_en(rain_mm, rain_range)
+      parts << timing_explanation_en(days, delay)
     end
 
     parts.join(" · ").capitalize
+  end
+
+  # --- Explanation helpers (value-based, not score-based) ---
+
+  def temp_explanation_ro(temp, r)
+    if temp.between?(r[:ideal_min], r[:ideal_max])
+      "temperatură bună (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)"
+    elsif temp.between?(r[:abs_min], r[:abs_max])
+      temp < r[:ideal_min] ?
+        "cam frig (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)" :
+        "cam cald (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)"
+    elsif temp < r[:abs_min]
+      "prea frig (#{temp}°C, necesită min #{r[:abs_min]}°C)"
+    else
+      "prea cald (#{temp}°C, necesită max #{r[:abs_max]}°C)"
+    end
+  end
+
+  def temp_explanation_en(temp, r)
+    if temp.between?(r[:ideal_min], r[:ideal_max])
+      "good temperature (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)"
+    elsif temp.between?(r[:abs_min], r[:abs_max])
+      temp < r[:ideal_min] ?
+        "a bit cold (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)" :
+        "a bit warm (#{temp}°C, ideal #{r[:ideal_min]}–#{r[:ideal_max]}°C)"
+    elsif temp < r[:abs_min]
+      "too cold (#{temp}°C, needs min #{r[:abs_min]}°C)"
+    else
+      "too warm (#{temp}°C, needs max #{r[:abs_max]}°C)"
+    end
+  end
+
+  def rain_explanation_ro(rain_mm, r)
+    if rain_mm.between?(r[:ideal_min], r[:ideal_max])
+      "precipitații bune (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)"
+    elsif rain_mm.between?(r[:abs_min], r[:abs_max])
+      rain_mm < r[:ideal_min] ?
+        "cam uscat (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)" :
+        "cam umed (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)"
+    elsif rain_mm < r[:abs_min]
+      "prea uscat (#{rain_mm}mm, necesită min #{r[:abs_min]}mm)"
+    else
+      "prea umed (#{rain_mm}mm, necesită max #{r[:abs_max]}mm)"
+    end
+  end
+
+  def rain_explanation_en(rain_mm, r)
+    if rain_mm.between?(r[:ideal_min], r[:ideal_max])
+      "good rainfall (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)"
+    elsif rain_mm.between?(r[:abs_min], r[:abs_max])
+      rain_mm < r[:ideal_min] ?
+        "a bit dry (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)" :
+        "a bit wet (#{rain_mm}mm, ideal #{r[:ideal_min]}–#{r[:ideal_max]}mm)"
+    elsif rain_mm < r[:abs_min]
+      "too dry (#{rain_mm}mm, needs min #{r[:abs_min]}mm)"
+    else
+      "too wet (#{rain_mm}mm, needs max #{r[:abs_max]}mm)"
+    end
+  end
+
+  def timing_explanation_ro(days, r)
+    if days.between?(r[:ideal_min], r[:ideal_max])
+      "moment bun după ploaie (#{days} #{zile(days)})"
+    elsif days.between?(r[:abs_min], r[:abs_max])
+      days < r[:ideal_min] ?
+        "cam devreme după ploaie (#{days} #{zile(days)})" :
+        "cam mult de la ploaie (#{days} #{zile(days)})"
+    elsif days < r[:abs_min]
+      "prea devreme după ploaie (#{days} #{zile(days)})"
+    else
+      "prea mult de la ultima ploaie (#{days} #{zile(days)})"
+    end
+  end
+
+  def timing_explanation_en(days, r)
+    if days.between?(r[:ideal_min], r[:ideal_max])
+      "good timing after rain (#{days} #{zile(days)})"
+    elsif days.between?(r[:abs_min], r[:abs_max])
+      days < r[:ideal_min] ?
+        "a bit soon after rain (#{days} #{zile(days)})" :
+        "a bit long since rain (#{days} #{zile(days)})"
+    elsif days < r[:abs_min]
+      "too soon after rain (#{days} #{zile(days)})"
+    else
+      "too long since rain (#{days} #{zile(days)})"
+    end
   end
 end

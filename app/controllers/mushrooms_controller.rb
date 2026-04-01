@@ -3,23 +3,24 @@ class MushroomsController < ApplicationController
 
   def index
     @species = Species.all
-    @location_tree_json = Location.to_json_tree
   end
 
   def score
     species_key = params[:species]
-    location = Location.find(params[:country], params[:city], params[:region])
+    lat = params[:lat].to_f
+    lon = params[:lon].to_f
+    location_name = params[:location_name].presence || "#{lat.round(2)}, #{lon.round(2)}"
 
     unless Species.find(species_key)
       return render json: { error: "Unknown species" }, status: :unprocessable_entity
     end
 
-    unless location
-      flash[:error] = "Please select a valid location."
-      return redirect_to root_path
+    if lat == 0.0 && lon == 0.0
+      flash[:error] = I18nHelper.t(:hint_location, @lang)
+      return redirect_to root_path(lang: @lang)
     end
 
-    weather_data = WeatherService.new.fetch_for_location(lat: location[:lat], lon: location[:lon])
+    weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon)
 
     result = ScoringEngine.new(species_key, weather_data, lang: @lang).call
     species_info = Species.find(species_key)
@@ -28,7 +29,7 @@ class MushroomsController < ApplicationController
       species_name: Species.localized(species_info, :name, @lang),
       species_latin: species_info[:latin],
       weather: weather_data[:raw] || {},
-      location_name: location[:name],
+      location_name: location_name,
       weather_stats: {
         avg_temp: weather_data[:avg_temp],
         total_rain: weather_data[:total_rain_7d],
@@ -49,7 +50,7 @@ class MushroomsController < ApplicationController
   private
 
   def set_lang
-    @lang = %w[en ro].include?(params[:lang]) ? params[:lang] : "en"
+    @lang = %w[en ro].include?(params[:lang]) ? params[:lang] : "ro"
   end
 
 end

@@ -1,4 +1,4 @@
-<a href="<%= root_path(country: params[:country], city: params[:city], region: params[:region], lang: @lang) %>" class="back-link">&#8592; <%= I18nHelper.t(:back_link, @lang) %></a>
+<a href="<%= root_path(lat: params[:lat], lon: params[:lon], location_name: params[:location_name], lang: @lang) %>" class="back-link">&#8592; <%= I18nHelper.t(:back_link, @lang) %></a>
 
 <% tier = @result[:tier] %>
 
@@ -25,7 +25,7 @@
 
   <!-- Score Breakdown -->
   <div class="breakdown">
-    <% max_scores = { season: 25, temperature: 25, rain: 25, timing: 25 } %>
+    <% max_scores = { season: 30, temperature: 30, rain: 30, timing: 10 } %>
     <% stats = @result[:weather_stats] || {} %>
     <% breakdown_labels = {
       season: I18nHelper.t(:season, @lang),

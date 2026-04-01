@@ -105,17 +105,17 @@ class WeatherService
     }
   end
 
+  # Use only daily means from the archive for scoring, not the current live temp.
+  # The current temp can be misleading (e.g. cold at night) and would skew the average.
   def extract_temp_from_history(history, current)
     temps = history.dig("daily", "temperature_2m_mean") || []
     temps = temps.compact
 
-    current_temp = current[:temp]
-    temps << current_temp if current_temp
-
     if temps.any?
       { avg: temps.sum / temps.size.to_f }
     else
-      { avg: current_temp || 10.0 }
+      # Fallback to current temp only if we have no historical data at all
+      { avg: current[:temp] || 10.0 }
     end
   end
 

@@ -1,5 +1,9 @@
 <%= form_tag(score_mushrooms_path, method: :post, id: "score-form") do %>
   <%= hidden_field_tag :lang, @lang %>
+  <%= hidden_field_tag :lat, "", id: "selected-lat" %>
+  <%= hidden_field_tag :lon, "", id: "selected-lon" %>
+  <%= hidden_field_tag :location_name, "", id: "selected-location-name" %>
+  <%= hidden_field_tag :species, "", id: "selected-species" %>
 
   <h2 class="section-title">🍄‍🟫 <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
 
@@ -20,23 +24,15 @@
 
   <h2 class="section-title" style="margin-top: 0.5rem;"><%= I18nHelper.t(:choose_location, @lang) %></h2>
 
-  <div class="location-picker">
-    <div class="location-row">
-      <select name="country" id="country-select">
-        <option value=""><%= I18nHelper.t(:country_placeholder, @lang) %></option>
-      </select>
-
-      <select name="city" id="city-select" disabled>
-        <option value=""><%= I18nHelper.t(:city_placeholder, @lang) %></option>
-      </select>
-
-      <select name="region" id="region-select" disabled>
-        <option value=""><%= I18nHelper.t(:region_placeholder, @lang) %></option>
-      </select>
-    </div>
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <button type="button" class="gps-btn" id="gps-btn" onclick="useMyLocation()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+      <span id="gps-btn-text"><%= I18nHelper.t(:use_my_location, @lang) %></span>
+    </button>
+    <div class="map-hint" id="map-hint"><%= I18nHelper.t(:tap_map_hint, @lang) %></div>
+    <div class="location-badge" id="location-badge" style="display:none;"></div>
   </div>
-
-  <%= hidden_field_tag :species, "", id: "selected-species" %>
 
   <div class="action-area">
     <button type="submit" class="btn-score" id="score-btn" disabled>
@@ -50,126 +46,156 @@
 <% end %>
 
 <script>
-  var locationTree = <%= raw @location_tree_json %>;
-  var speciesSelected = false;
-  var regionSelected = false;
   var currentLang = '<%= @lang %>';
+  var speciesSelected = false;
+  var locationSelected = false;
+  var map, marker;
 
-  // Translations for JS hints
+  // Translations
   var hints = {
     both: "<%= j I18nHelper.t(:hint_both, @lang) %>",
     mushroom: "<%= j I18nHelper.t(:hint_mushroom, @lang) %>",
     location: "<%= j I18nHelper.t(:hint_location, @lang) %>",
-    ready: "<%= j I18nHelper.t(:hint_ready, @lang) %>"
+    ready: "<%= j I18nHelper.t(:hint_ready, @lang) %>",
+    locating: "<%= j I18nHelper.t(:locating, @lang) %>",
+    locationError: "<%= j I18nHelper.t(:location_error, @lang) %>",
+    useMyLocation: "<%= j I18nHelper.t(:use_my_location, @lang) %>"
   };
 
-  // Dropdown placeholder text
-  var placeholders = {
-    country: "<%= j I18nHelper.t(:country_placeholder, @lang) %>",
-    city: "<%= j I18nHelper.t(:city_placeholder, @lang) %>",
-    region: "<%= j I18nHelper.t(:region_placeholder, @lang) %>"
-  };
+  // Fix Leaflet default marker icon path (broken when loaded from CDN)
+  var markerIcon = L.divIcon({
+    className: 'custom-marker',
+    html: '<div style="background:#2d5016;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);position:relative;"><div style="width:10px;height:10px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"></div></div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28]
+  });
 
-  // Read saved location from URL params
+  // Initialize map centered on Romania
+  map = L.map('map', {
+    center: [45.9432, 24.9668],
+    zoom: 7,
+    zoomControl: true,
+    attributionControl: false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+  }).addTo(map);
+
+  // Small attribution
+  L.control.attribution({ prefix: false, position: 'bottomright' })
+    .addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a>')
+    .addTo(map);
+
+  // Restore from URL params
   var urlParams = new URLSearchParams(window.location.search);
-  var savedCountry = urlParams.get('country') || '';
-  var savedCity = urlParams.get('city') || '';
-  var savedRegion = urlParams.get('region') || '';
+  var savedLat = parseFloat(urlParams.get('lat'));
+  var savedLon = parseFloat(urlParams.get('lon'));
+  var savedName = urlParams.get('location_name') || '';
 
-  var countrySelect = document.getElementById('country-select');
-  var citySelect = document.getElementById('city-select');
-  var regionSelect = document.getElementById('region-select');
+  if (!isNaN(savedLat) && !isNaN(savedLon) && savedLat !== 0) {
+    placeMarker(savedLat, savedLon, savedName || (savedLat.toFixed(4) + ', ' + savedLon.toFixed(4)));
+    map.setView([savedLat, savedLon], 12);
+  }
 
-  // Populate countries
-  Object.keys(locationTree).sort().forEach(function(country) {
-    var opt = document.createElement('option');
-    opt.value = country;
-    opt.textContent = country;
-    countrySelect.appendChild(opt);
+  // Click on map
+  map.on('click', function(e) {
+    var lat = e.latlng.lat;
+    var lon = e.latlng.lng;
+    placeMarker(lat, lon, lat.toFixed(4) + ', ' + lon.toFixed(4));
+    reverseGeocode(lat, lon);
   });
 
-  // Restore saved country
-  if (savedCountry && locationTree[savedCountry]) {
-    countrySelect.value = savedCountry;
-    populateCities(savedCountry);
-
-    if (savedCity && locationTree[savedCountry][savedCity]) {
-      citySelect.value = savedCity;
-      populateRegions(savedCountry, savedCity);
-
-      if (savedRegion && locationTree[savedCountry][savedCity][savedRegion]) {
-        regionSelect.value = savedRegion;
-        regionSelected = true;
-      }
+  function placeMarker(lat, lon, name) {
+    if (marker) {
+      marker.setLatLng([lat, lon]);
+    } else {
+      marker = L.marker([lat, lon], { draggable: true, icon: markerIcon }).addTo(map);
+      marker.on('dragend', function(e) {
+        var pos = e.target.getLatLng();
+        updateLocation(pos.lat, pos.lng, pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4));
+        reverseGeocode(pos.lat, pos.lng);
+      });
     }
+    updateLocation(lat, lon, name);
+  }
+
+  function updateLocation(lat, lon, name) {
+    document.getElementById('selected-lat').value = lat;
+    document.getElementById('selected-lon').value = lon;
+    document.getElementById('selected-location-name').value = name;
+    locationSelected = true;
+
+    var badge = document.getElementById('location-badge');
+    badge.textContent = '📍 ' + name;
+    badge.style.display = 'block';
+    document.getElementById('map-hint').style.display = 'none';
+
     updateButton();
   }
 
-  function populateCities(country) {
-    citySelect.innerHTML = '<option value="">' + placeholders.city + '</option>';
-    regionSelect.innerHTML = '<option value="">' + placeholders.region + '</option>';
-    regionSelect.disabled = true;
-
-    if (!country) { citySelect.disabled = true; return; }
-
-    citySelect.disabled = false;
-    Object.keys(locationTree[country]).sort().forEach(function(city) {
-      var opt = document.createElement('option');
-      opt.value = city;
-      opt.textContent = city;
-      citySelect.appendChild(opt);
-    });
+  function reverseGeocode(lat, lon) {
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=10&addressdetails=1&accept-language=' + currentLang;
+    fetch(url, { headers: { 'User-Agent': 'MushroomAdvisor/1.0' } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.address) {
+          var a = data.address;
+          var parts = [];
+          if (a.village || a.town || a.city || a.hamlet) parts.push(a.village || a.town || a.city || a.hamlet);
+          if (a.county) parts.push(a.county);
+          var name = parts.length > 0 ? parts.join(', ') : (data.display_name || '').split(',').slice(0, 2).join(',');
+          if (name) {
+            document.getElementById('selected-location-name').value = name;
+            document.getElementById('location-badge').textContent = '📍 ' + name;
+            // Update hint if ready
+            updateButton();
+          }
+        }
+      })
+      .catch(function() { /* keep coordinates as fallback */ });
   }
 
-  function populateRegions(country, city) {
-    regionSelect.innerHTML = '<option value="">' + placeholders.region + '</option>';
+  // GPS button
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      alert(hints.locationError);
+      return;
+    }
+    var btn = document.getElementById('gps-btn');
+    var btnText = document.getElementById('gps-btn-text');
+    btn.disabled = true;
+    btnText.textContent = hints.locating;
 
-    if (!city) { regionSelect.disabled = true; return; }
-
-    regionSelect.disabled = false;
-    var regions = locationTree[country][city];
-    var keys = Object.keys(regions).sort(function(a, b) {
-      var nameA = regions[a][currentLang] || regions[a]['en'];
-      var nameB = regions[b][currentLang] || regions[b]['en'];
-      return nameA.localeCompare(nameB);
-    });
-    keys.forEach(function(key) {
-      var opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = regions[key][currentLang] || regions[key]['en'];
-      regionSelect.appendChild(opt);
-    });
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        placeMarker(lat, lon, lat.toFixed(4) + ', ' + lon.toFixed(4));
+        map.setView([lat, lon], 12);
+        reverseGeocode(lat, lon);
+        btn.disabled = false;
+        btnText.textContent = hints.useMyLocation;
+      },
+      function(err) {
+        btn.disabled = false;
+        btnText.textContent = hints.useMyLocation;
+        alert(hints.locationError);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   }
 
-  countrySelect.addEventListener('change', function() {
-    regionSelected = false;
-    populateCities(this.value);
-    updateButton();
-  });
-
-  citySelect.addEventListener('change', function() {
-    regionSelected = false;
-    populateRegions(countrySelect.value, this.value);
-    updateButton();
-  });
-
-  regionSelect.addEventListener('change', function() {
-    regionSelected = !!this.value;
-    updateButton();
-  });
-
+  // Species selection (same as before)
   function selectSpecies(card, key) {
     var wasSelected = card.classList.contains('selected');
-
-    // Deselect all
     document.querySelectorAll('.species-card').forEach(function(c) { c.classList.remove('selected'); });
 
     if (wasSelected) {
-      // Toggle off
       document.getElementById('selected-species').value = '';
       speciesSelected = false;
     } else {
-      // Select this one
       card.classList.add('selected');
       document.getElementById('selected-species').value = key;
       speciesSelected = true;
@@ -180,19 +206,18 @@
   function updateButton() {
     var btn = document.getElementById('score-btn');
     var hint = document.getElementById('hint-text');
-    btn.disabled = !(speciesSelected && regionSelected);
+    btn.disabled = !(speciesSelected && locationSelected);
 
-    if (!speciesSelected && !regionSelected) {
+    if (!speciesSelected && !locationSelected) {
       hint.textContent = hints.both;
     } else if (!speciesSelected) {
       hint.textContent = hints.mushroom;
-    } else if (!regionSelected) {
+    } else if (!locationSelected) {
       hint.textContent = hints.location;
     } else {
       var species = document.querySelector('.species-card.selected .species-name').textContent.trim();
-      var regionKey = regionSelect.value;
-      var regionName = regionSelect.options[regionSelect.selectedIndex].textContent;
-      hint.textContent = hints.ready.replace('%{species}', species).replace('%{region}', regionName);
+      var locName = document.getElementById('selected-location-name').value || '';
+      hint.textContent = hints.ready.replace('%{species}', species).replace('%{location}', locName);
     }
   }
 </script>
