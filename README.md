@@ -14,10 +14,7 @@ Visit **http://localhost:3000** and pick a mushroom!
 
 ## Weather Data
 
-The app works in **demo mode** out of the box. For real weather data:
-
-1. Get a free API key from [OpenWeatherMap](https://openweathermap.org/api)
-2. Set it before starting the server:
+Open-Meteo (historical rain data) needs no API key.
 
 ```bash
 export OPEN_WEATHER_API_KEY=your_key_here
