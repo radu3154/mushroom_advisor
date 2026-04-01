@@ -3,21 +3,17 @@ require "json"
 require "uri"
 
 class WeatherService
-  OPENWEATHER_URL = "https://api.openweathermap.org/data/2.5".freeze
-  OPEN_METEO_URL  = "https://archive-api.open-meteo.com/v1/archive".freeze
+  OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive".freeze
+  OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast".freeze
 
   class WeatherError < StandardError; end
 
-  def initialize(api_key = OPEN_WEATHER_API_KEY)
-    @api_key = api_key
-  end
-
   def fetch_for_location(lat:, lon:)
-    # Current conditions from OpenWeather
-    current = fetch_json("#{OPENWEATHER_URL}/weather?lat=#{lat}&lon=#{lon}&units=metric&appid=#{@api_key}")
+    # Current conditions from Open-Meteo forecast API (free, no key)
+    current = fetch_current(lat, lon)
 
-    # Historical rain from Open-Meteo (last 10 days, free, no key needed)
-    history = fetch_open_meteo_history(lat, lon)
+    # Historical rain + temp from Open-Meteo archive API (free, no key)
+    history = fetch_history(lat, lon)
 
     temp_data = extract_temp_from_history(history, current)
     rain_data = extract_rain_from_history(history)
@@ -28,33 +24,14 @@ class WeatherService
       days_since_rain: rain_data[:days_since],
       current_month: Time.now.month,
       raw: {
-        current_temp: current.dig("main", "temp"),
-        description: current.dig("weather", 0, "description"),
-        humidity: current.dig("main", "humidity"),
-        location_name: current["name"],
-        rain_detail: rain_data[:detail],
+        current_temp: current[:temp],
+        description: current[:description],
+        humidity: current[:humidity],
         rain_daily: rain_data[:daily]
       }
     }
   rescue => e
     raise WeatherError, "Failed to fetch weather: #{e.message}"
-  end
-
-  def self.demo_data(month: Time.now.month)
-    {
-      avg_temp: 13.5,
-      total_rain_7d: 18.0,
-      days_since_rain: 3,
-      current_month: month,
-      raw: {
-        current_temp: 14.2,
-        description: "partly cloudy",
-        humidity: 72,
-        location_name: "Demo Forest",
-        rain_detail: "demo data",
-        rain_daily: []
-      }
-    }
   end
 
   private
@@ -67,9 +44,8 @@ class WeatherService
     http.read_timeout = 10
 
     request = Net::HTTP::Get.new(uri.request_uri)
-    Rails.logger.info "Fetching JSON from #{url}"
+    Rails.logger.info "Fetching: #{url}"
     response = http.request(request)
-    Rails.logger.info "Response: #{response.body}"
 
     unless response.is_a?(Net::HTTPSuccess)
       raise WeatherError, "API returned #{response.code}: #{response.body}"
@@ -78,12 +54,28 @@ class WeatherService
     JSON.parse(response.body)
   end
 
-  # Fetches last 10 days of daily rain and temperature from Open-Meteo
-  def fetch_open_meteo_history(lat, lon)
-    end_date = Date.today
+  # Current weather from Open-Meteo forecast API
+  def fetch_current(lat, lon)
+    url = "#{OPEN_METEO_FORECAST_URL}?latitude=#{lat}&longitude=#{lon}" \
+          "&current=temperature_2m,relative_humidity_2m,weather_code" \
+          "&timezone=auto"
+
+    data = fetch_json(url)
+    current = data["current"] || {}
+
+    {
+      temp: current["temperature_2m"],
+      humidity: current["relative_humidity_2m"],
+      description: weather_code_to_text(current["weather_code"])
+    }
+  end
+
+  # Last 10 days of daily rain and temperature from Open-Meteo archive
+  def fetch_history(lat, lon)
+    end_date = Date.today - 1  # archive doesn't include today
     start_date = end_date - 10
 
-    url = "#{OPEN_METEO_URL}?latitude=#{lat}&longitude=#{lon}" \
+    url = "#{OPEN_METEO_ARCHIVE_URL}?latitude=#{lat}&longitude=#{lon}" \
           "&start_date=#{start_date}&end_date=#{end_date}" \
           "&daily=rain_sum,temperature_2m_mean" \
           "&timezone=auto"
@@ -95,26 +87,20 @@ class WeatherService
     dates = history.dig("daily", "time") || []
     rains = history.dig("daily", "rain_sum") || []
 
-    # Build daily rain array
     daily = dates.zip(rains).map { |d, r| { date: d, rain_mm: r || 0 } }
 
-    # Last 7 days total
     last_7 = daily.last(7)
     total_7d = last_7.sum { |d| d[:rain_mm] }
 
-    # Days since last significant rain (> 1mm)
     days_since = 0
     daily.reverse.each do |d|
       break if d[:rain_mm] >= 1.0
       days_since += 1
     end
 
-    detail = last_7.map { |d| "#{d[:date]}: #{d[:rain_mm]}mm" }.join(", ")
-
     {
       total_7d: total_7d,
       days_since: [days_since, 0].max,
-      detail: "Last 7 days total: #{total_7d.round(1)}mm. #{detail}",
       daily: daily
     }
   end
@@ -123,14 +109,35 @@ class WeatherService
     temps = history.dig("daily", "temperature_2m_mean") || []
     temps = temps.compact
 
-    # Add current temp for freshness
-    current_temp = current.dig("main", "temp")
+    current_temp = current[:temp]
     temps << current_temp if current_temp
 
     if temps.any?
-      { avg: temps.sum / temps.size.to_f, min: temps.min, max: temps.max }
+      { avg: temps.sum / temps.size.to_f }
     else
-      { avg: current_temp || 10.0, min: current_temp || 5.0, max: current_temp || 15.0 }
+      { avg: current_temp || 10.0 }
+    end
+  end
+
+  # WMO weather interpretation codes -> human text
+  def weather_code_to_text(code)
+    case code
+    when 0 then "clear sky"
+    when 1 then "mainly clear"
+    when 2 then "partly cloudy"
+    when 3 then "overcast"
+    when 45, 48 then "foggy"
+    when 51, 53, 55 then "drizzle"
+    when 56, 57 then "freezing drizzle"
+    when 61, 63, 65 then "rain"
+    when 66, 67 then "freezing rain"
+    when 71, 73, 75 then "snowfall"
+    when 77 then "snow grains"
+    when 80, 81, 82 then "rain showers"
+    when 85, 86 then "snow showers"
+    when 95 then "thunderstorm"
+    when 96, 99 then "thunderstorm with hail"
+    else "unknown"
     end
   end
 end

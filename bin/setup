@@ -22,7 +22,6 @@ FileUtils.chdir APP_ROOT do
   puts ""
   puts "Then visit http://localhost:3000"
   puts ""
-  puts "For real weather data, set your OpenWeather API key:"
-  puts "  export OPEN_WEATHER_API_KEY=your_key_here"
+  puts "Weather data is provided by Open-Meteo (free, no API key needed)."
   puts ""
 end

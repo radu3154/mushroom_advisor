@@ -558,12 +558,36 @@
   <div class="header">
     <div class="lang-toggle">
       <% %w[en ro].each do |l| %>
-        <a href="<%= request.path %>?<%= request.query_parameters.merge(lang: l).to_query %>"
-           class="lang-btn <%= 'active' if @lang == l %>">
-          <%= l.upcase %>
-        </a>
+        <% if request.post? %>
+          <%# On POST pages (score), resubmit via hidden form %>
+          <a href="#" class="lang-btn <%= 'active' if @lang == l %>"
+             onclick="switchLang('<%= l %>'); return false;">
+            <%= l.upcase %>
+          </a>
+        <% else %>
+          <a href="<%= request.path %>?<%= request.query_parameters.merge(lang: l).to_query %>"
+             class="lang-btn <%= 'active' if @lang == l %>">
+            <%= l.upcase %>
+          </a>
+        <% end %>
       <% end %>
     </div>
+    <% if request.post? %>
+      <form id="lang-switch-form" method="post" action="<%= request.path %>" style="display:none;">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <% params.each do |key, val| %>
+          <% next if %w[controller action authenticity_token lang].include?(key) %>
+          <input type="hidden" name="<%= key %>" value="<%= val %>">
+        <% end %>
+        <input type="hidden" name="lang" id="lang-switch-val" value="<%= @lang %>">
+      </form>
+      <script>
+        function switchLang(lang) {
+          document.getElementById('lang-switch-val').value = lang;
+          document.getElementById('lang-switch-form').submit();
+        }
+      </script>
+    <% end %>
     <h1><%= I18nHelper.t(:header_title, @lang) %></h1>
     <p><%= I18nHelper.t(:header_subtitle, @lang) %></p>
   </div>

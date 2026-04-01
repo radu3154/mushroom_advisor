@@ -1,6 +1,6 @@
 <a href="<%= root_path(country: params[:country], city: params[:city], region: params[:region], lang: @lang) %>" class="back-link">&#8592; <%= I18nHelper.t(:back_link, @lang) %></a>
 
-<% tier = @result[:label].downcase.gsub(" ", "-") %>
+<% tier = @result[:tier] %>
 
 <% if @result[:demo] %>
   <div class="demo-banner">
