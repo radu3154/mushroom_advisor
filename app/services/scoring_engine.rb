@@ -1,3 +1,5 @@
+require "date"
+
 class ScoringEngine
   # Scores a species against current weather data.
   # Returns a hash with :score, :label, :best_time, :explanation, :habitat
@@ -39,7 +41,7 @@ class ScoringEngine
   end
 
   def call
-    unless in_season_or_adjacent?
+    unless in_season?
       oos = OUT_OF_SEASON_LABELS[@lang] || OUT_OF_SEASON_LABELS["en"]
       species_name = Species.localized(@species, :name, @lang)
       return {
@@ -81,76 +83,47 @@ class ScoringEngine
 
   private
 
-  # --- Season (0–20) ---
+  # --- Season (0–25) ---
+  # In season = 25, out of season = 0 (no "adjacent" fudging)
   def score_season
-    if @species[:season_months].include?(@weather[:current_month])
-      20
-    elsif adjacent_month?
-      8
-    else
-      0
-    end
+    @species[:season_months].include?(@weather[:current_month]) ? 25 : 0
   end
 
-  def adjacent_month?
-    @species[:season_months].any? do |m|
-      (m - @weather[:current_month]).abs <= 1 ||
-        (m - @weather[:current_month]).abs == 11
-    end
-  end
-
-  # --- Temperature (0–30) ---
+  # --- Temperature (0–25) ---
+  # Smooth gradient: 0 at abs boundary → 25 at ideal boundary (no cliff)
   def score_temperature
-    range = @species[:temp_range]
-    temp = @weather[:avg_temp]
-
-    if temp.between?(range[:ideal_min], range[:ideal_max])
-      30
-    elsif temp.between?(range[:abs_min], range[:abs_max])
-      if temp < range[:ideal_min]
-        proportion = (temp - range[:abs_min]).to_f / (range[:ideal_min] - range[:abs_min])
-      else
-        proportion = (range[:abs_max] - temp).to_f / (range[:abs_max] - range[:ideal_max])
-      end
-      (proportion * 20).round.clamp(0, 20)
-    else
-      0
-    end
+    score_range_smooth(@weather[:avg_temp], @species[:temp_range], 25)
   end
 
-  # --- Rain last 7 days (0–30) ---
+  # --- Rain last 7 days (0–25) ---
   def score_rain
-    range = @species[:rain_range]
-    rain = @weather[:total_rain_7d]
-
-    if rain.between?(range[:ideal_min], range[:ideal_max])
-      30
-    elsif rain.between?(range[:abs_min], range[:abs_max])
-      if rain < range[:ideal_min]
-        proportion = (rain - range[:abs_min]).to_f / (range[:ideal_min] - range[:abs_min])
-      else
-        proportion = (range[:abs_max] - rain).to_f / (range[:abs_max] - range[:ideal_max])
-      end
-      (proportion * 20).round.clamp(0, 20)
-    else
-      0
-    end
+    score_range_smooth(@weather[:total_rain_7d], @species[:rain_range], 25)
   end
 
-  # --- Timing after rain (0–20) ---
+  # --- Timing after rain (0–25) ---
   def score_timing
-    range = @species[:delay_days]
-    days = @weather[:days_since_rain]
+    score_range_smooth(@weather[:days_since_rain], @species[:delay_days], 25)
+  end
 
-    if days.between?(range[:ideal_min], range[:ideal_max])
-      20
-    elsif days.between?(range[:abs_min], range[:abs_max])
-      if days < range[:ideal_min]
-        proportion = (days - range[:abs_min]).to_f / (range[:ideal_min] - range[:abs_min])
+  # Smooth scoring for a value within a range spec.
+  # Returns max_score when inside ideal, scales linearly from 0 to max_score
+  # between abs boundary and ideal boundary. No discontinuity.
+  def score_range_smooth(value, range, max_score)
+    ideal_min = range[:ideal_min]
+    ideal_max = range[:ideal_max]
+    abs_min   = range[:abs_min]
+    abs_max   = range[:abs_max]
+
+    if value.between?(ideal_min, ideal_max)
+      max_score
+    elsif value.between?(abs_min, abs_max)
+      if value < ideal_min
+        span = ideal_min - abs_min
+        span > 0 ? ((value - abs_min).to_f / span * max_score).round.clamp(0, max_score) : 0
       else
-        proportion = (range[:abs_max] - days).to_f / (range[:abs_max] - range[:ideal_max])
+        span = abs_max - ideal_max
+        span > 0 ? ((abs_max - value).to_f / span * max_score).round.clamp(0, max_score) : 0
       end
-      (proportion * 12).round.clamp(0, 12)
     else
       0
     end
@@ -158,8 +131,8 @@ class ScoringEngine
 
   # --- Helpers ---
 
-  def in_season_or_adjacent?
-    @species[:season_months].include?(@weather[:current_month]) || adjacent_month?
+  def in_season?
+    @species[:season_months].include?(@weather[:current_month])
   end
 
   def month_name(m)
@@ -221,17 +194,11 @@ class ScoringEngine
     parts = []
 
     if @lang == "ro"
-      parts << if scores[:season] == 20
-        "sezon de vârf"
-      elsif scores[:season] > 0
-        "la marginea sezonului"
-      else
-        "în afara sezonului"
-      end
+      parts << (scores[:season] == 25 ? "sezon de vârf" : "în afara sezonului")
 
-      parts << if scores[:temperature] >= 25
+      parts << if scores[:temperature] >= 20
         "temperatură ideală (#{temp}°C)"
-      elsif scores[:temperature] >= 15
+      elsif scores[:temperature] >= 12
         "temperatură acceptabilă (#{temp}°C)"
       elsif temp < temp_range[:abs_min]
         "prea frig (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
@@ -239,9 +206,9 @@ class ScoringEngine
         "prea cald (#{temp}°C, necesită #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
       end
 
-      parts << if scores[:rain] >= 25
+      parts << if scores[:rain] >= 20
         "precipitații excelente (#{rain_mm}mm)"
-      elsif scores[:rain] >= 15
+      elsif scores[:rain] >= 12
         "precipitații decente (#{rain_mm}mm)"
       elsif rain_mm < rain_range[:abs_min]
         "prea uscat (#{rain_mm}mm, necesită #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
@@ -249,9 +216,9 @@ class ScoringEngine
         "prea umed (#{rain_mm}mm, ideal #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
       end
 
-      parts << if scores[:timing] >= 15
+      parts << if scores[:timing] >= 20
         "moment perfect după ploaie"
-      elsif scores[:timing] >= 8
+      elsif scores[:timing] >= 12
         "timp acceptabil (#{days} zile de la ploaie)"
       elsif days < @species[:delay_days][:ideal_min]
         "prea devreme după ploaie (#{days} zile)"
@@ -259,17 +226,11 @@ class ScoringEngine
         "prea mult de la ultima ploaie (#{days} zile)"
       end
     else
-      parts << if scores[:season] == 20
-        "peak season"
-      elsif scores[:season] > 0
-        "near season edge"
-      else
-        "out of season"
-      end
+      parts << (scores[:season] == 25 ? "peak season" : "out of season")
 
-      parts << if scores[:temperature] >= 25
+      parts << if scores[:temperature] >= 20
         "ideal temperature (#{temp}°C)"
-      elsif scores[:temperature] >= 15
+      elsif scores[:temperature] >= 12
         "acceptable temperature (#{temp}°C)"
       elsif temp < temp_range[:abs_min]
         "too cold (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
@@ -277,9 +238,9 @@ class ScoringEngine
         "too warm (#{temp}°C, needs #{temp_range[:ideal_min]}–#{temp_range[:ideal_max]}°C)"
       end
 
-      parts << if scores[:rain] >= 25
+      parts << if scores[:rain] >= 20
         "great rainfall (#{rain_mm}mm)"
-      elsif scores[:rain] >= 15
+      elsif scores[:rain] >= 12
         "decent rainfall (#{rain_mm}mm)"
       elsif rain_mm < rain_range[:abs_min]
         "too dry (#{rain_mm}mm, needs #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
@@ -287,13 +248,11 @@ class ScoringEngine
         "too wet (#{rain_mm}mm, ideal is #{rain_range[:ideal_min]}–#{rain_range[:ideal_max]}mm)"
       end
 
-      ideal_min_delay = @species[:delay_days][:ideal_min]
-
-      parts << if scores[:timing] >= 15
+      parts << if scores[:timing] >= 20
         "perfect timing after rain"
-      elsif scores[:timing] >= 8
+      elsif scores[:timing] >= 12
         "okay timing (#{days} days since rain)"
-      elsif days < ideal_min_delay
+      elsif days < @species[:delay_days][:ideal_min]
         "too soon after rain (#{days} days ago)"
       else
         "too long since rain (#{days} days ago)"
