@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit
 
+# Remove stale Ruby version from Gemfile.lock (local dev may use older Ruby)
+sed -i '/RUBY VERSION/,+1d' Gemfile.lock
+
 bundle install
 bundle exec rake assets:precompile
