@@ -1,0 +1,198 @@
+<%= form_tag(score_mushrooms_path, method: :post, id: "score-form") do %>
+  <%= hidden_field_tag :lang, @lang %>
+
+  <h2 class="section-title"><%= raw("&#x1F344;") %> <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
+
+  <div class="species-grid">
+    <% @species.each do |key, species| %>
+      <div class="species-card" data-species="<%= key %>" onclick="selectSpecies(this, '<%= key %>')">
+        <div class="species-image">
+          <%= species[:svg].html_safe %>
+        </div>
+        <div class="species-info">
+          <div class="species-name"><%= Species.localized(species, :name, @lang) %></div>
+          <div class="species-latin"><%= species[:latin] %></div>
+          <p class="species-desc"><%= Species.localized(species, :description, @lang) %></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <h2 class="section-title" style="margin-top: 0.5rem;"><%= I18nHelper.t(:choose_location, @lang) %></h2>
+
+  <div class="location-picker">
+    <div class="location-row">
+      <select name="country" id="country-select">
+        <option value=""><%= I18nHelper.t(:country_placeholder, @lang) %></option>
+      </select>
+
+      <select name="city" id="city-select" disabled>
+        <option value=""><%= I18nHelper.t(:city_placeholder, @lang) %></option>
+      </select>
+
+      <select name="region" id="region-select" disabled>
+        <option value=""><%= I18nHelper.t(:region_placeholder, @lang) %></option>
+      </select>
+    </div>
+  </div>
+
+  <%= hidden_field_tag :species, "", id: "selected-species" %>
+
+  <div class="action-area">
+    <button type="submit" class="btn-score" id="score-btn" disabled>
+      <%= I18nHelper.t(:check_conditions, @lang) %>
+    </button>
+    <p style="font-size: 0.8rem; color: #999; margin-top: 0.6rem;" id="hint-text">
+      <%= I18nHelper.t(:hint_both, @lang) %>
+    </p>
+  </div>
+
+<% end %>
+
+<script>
+  var locationTree = <%= raw @location_tree_json %>;
+  var speciesSelected = false;
+  var regionSelected = false;
+  var currentLang = '<%= @lang %>';
+
+  // Translations for JS hints
+  var hints = {
+    both: "<%= j I18nHelper.t(:hint_both, @lang) %>",
+    mushroom: "<%= j I18nHelper.t(:hint_mushroom, @lang) %>",
+    location: "<%= j I18nHelper.t(:hint_location, @lang) %>",
+    ready: "<%= j I18nHelper.t(:hint_ready, @lang) %>"
+  };
+
+  // Dropdown placeholder text
+  var placeholders = {
+    country: "<%= j I18nHelper.t(:country_placeholder, @lang) %>",
+    city: "<%= j I18nHelper.t(:city_placeholder, @lang) %>",
+    region: "<%= j I18nHelper.t(:region_placeholder, @lang) %>"
+  };
+
+  // Read saved location from URL params
+  var urlParams = new URLSearchParams(window.location.search);
+  var savedCountry = urlParams.get('country') || '';
+  var savedCity = urlParams.get('city') || '';
+  var savedRegion = urlParams.get('region') || '';
+
+  var countrySelect = document.getElementById('country-select');
+  var citySelect = document.getElementById('city-select');
+  var regionSelect = document.getElementById('region-select');
+
+  // Populate countries
+  Object.keys(locationTree).sort().forEach(function(country) {
+    var opt = document.createElement('option');
+    opt.value = country;
+    opt.textContent = country;
+    countrySelect.appendChild(opt);
+  });
+
+  // Restore saved country
+  if (savedCountry && locationTree[savedCountry]) {
+    countrySelect.value = savedCountry;
+    populateCities(savedCountry);
+
+    if (savedCity && locationTree[savedCountry][savedCity]) {
+      citySelect.value = savedCity;
+      populateRegions(savedCountry, savedCity);
+
+      if (savedRegion && locationTree[savedCountry][savedCity][savedRegion]) {
+        regionSelect.value = savedRegion;
+        regionSelected = true;
+      }
+    }
+    updateButton();
+  }
+
+  function populateCities(country) {
+    citySelect.innerHTML = '<option value="">' + placeholders.city + '</option>';
+    regionSelect.innerHTML = '<option value="">' + placeholders.region + '</option>';
+    regionSelect.disabled = true;
+
+    if (!country) { citySelect.disabled = true; return; }
+
+    citySelect.disabled = false;
+    Object.keys(locationTree[country]).sort().forEach(function(city) {
+      var opt = document.createElement('option');
+      opt.value = city;
+      opt.textContent = city;
+      citySelect.appendChild(opt);
+    });
+  }
+
+  function populateRegions(country, city) {
+    regionSelect.innerHTML = '<option value="">' + placeholders.region + '</option>';
+
+    if (!city) { regionSelect.disabled = true; return; }
+
+    regionSelect.disabled = false;
+    var regions = locationTree[country][city];
+    var keys = Object.keys(regions).sort(function(a, b) {
+      var nameA = regions[a][currentLang] || regions[a]['en'];
+      var nameB = regions[b][currentLang] || regions[b]['en'];
+      return nameA.localeCompare(nameB);
+    });
+    keys.forEach(function(key) {
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = regions[key][currentLang] || regions[key]['en'];
+      regionSelect.appendChild(opt);
+    });
+  }
+
+  countrySelect.addEventListener('change', function() {
+    regionSelected = false;
+    populateCities(this.value);
+    updateButton();
+  });
+
+  citySelect.addEventListener('change', function() {
+    regionSelected = false;
+    populateRegions(countrySelect.value, this.value);
+    updateButton();
+  });
+
+  regionSelect.addEventListener('change', function() {
+    regionSelected = !!this.value;
+    updateButton();
+  });
+
+  function selectSpecies(card, key) {
+    var wasSelected = card.classList.contains('selected');
+
+    // Deselect all
+    document.querySelectorAll('.species-card').forEach(function(c) { c.classList.remove('selected'); });
+
+    if (wasSelected) {
+      // Toggle off
+      document.getElementById('selected-species').value = '';
+      speciesSelected = false;
+    } else {
+      // Select this one
+      card.classList.add('selected');
+      document.getElementById('selected-species').value = key;
+      speciesSelected = true;
+    }
+    updateButton();
+  }
+
+  function updateButton() {
+    var btn = document.getElementById('score-btn');
+    var hint = document.getElementById('hint-text');
+    btn.disabled = !(speciesSelected && regionSelected);
+
+    if (!speciesSelected && !regionSelected) {
+      hint.textContent = hints.both;
+    } else if (!speciesSelected) {
+      hint.textContent = hints.mushroom;
+    } else if (!regionSelected) {
+      hint.textContent = hints.location;
+    } else {
+      var species = document.querySelector('.species-card.selected .species-name').textContent.trim();
+      var regionKey = regionSelect.value;
+      var regionName = regionSelect.options[regionSelect.selectedIndex].textContent;
+      hint.textContent = hints.ready.replace('%{species}', species).replace('%{region}', regionName);
+    }
+  }
+</script>

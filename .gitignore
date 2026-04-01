@@ -1,0 +1,9 @@
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/node_modules
+.env
+*.swp
+*.swo
+.DS_Store

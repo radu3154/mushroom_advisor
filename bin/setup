@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+require "fileutils"
+
+APP_ROOT = File.expand_path("..", __dir__)
+
+def system!(*args)
+  system(*args, exception: true)
+end
+
+FileUtils.chdir APP_ROOT do
+  puts "== Installing dependencies =="
+  system! "gem install bundler --conservative"
+  system("bundle check") || system!("bundle install")
+
+  puts "\n== Preparing tmp directories =="
+  FileUtils.mkdir_p %w[tmp/pids tmp/cache tmp/sockets log]
+
+  puts "\n== Done! =="
+  puts ""
+  puts "To start the app:"
+  puts "  bin/rails server"
+  puts ""
+  puts "Then visit http://localhost:3000"
+  puts ""
+  puts "For real weather data, set your OpenWeather API key:"
+  puts "  export OPEN_WEATHER_API_KEY=your_key_here"
+  puts ""
+end
