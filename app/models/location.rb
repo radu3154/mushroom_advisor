@@ -134,7 +134,7 @@ class Location
         "barnova" => { lat: 47.08, lon: 27.60, name_en: "Barnova Forest", name_ro: "Pădurea Bârnova" },
         "codrii" => { lat: 47.10, lon: 27.58, name_en: "Codrii Iasilor", name_ro: "Codrii Iașilor" },
         "ciric" => { lat: 47.18, lon: 27.60, name_en: "Ciric Forest", name_ro: "Pădurea Ciric" },
-        "breastu" => { lat: 47.05, lon: 27.55, name_en: "Breastu Forest", name_ro: "Pădurea Breastu" }
+        "breazu" => { lat: 47.05, lon: 27.55, name_en: "Breazu Forest", name_ro: "Pădurea Breazu" }
       },
       "Miercurea Ciuc" => {
         "harghita" => { lat: 46.35, lon: 25.80, name_en: "Harghita Mountains", name_ro: "Munții Harghita" },
