@@ -44,7 +44,7 @@ class WeatherService
     http.read_timeout = 10
 
     request = Net::HTTP::Get.new(uri.request_uri)
-    Rails.logger.info "Fetching: #{url}"
+    Rails.logger.info("Fetching: #{url}") if defined?(Rails)
     response = http.request(request)
 
     unless response.is_a?(Net::HTTPSuccess)
