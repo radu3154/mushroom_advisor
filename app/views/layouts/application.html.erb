@@ -548,7 +548,27 @@
     /* --- Responsive --- */
     @media (max-width: 600px) {
       .header h1 { font-size: 1.6rem; }
-      .species-grid { grid-template-columns: 1fr; }
+      .species-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .species-card {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+      }
+      .species-image {
+        height: 100%;
+        min-height: 140px;
+        border-radius: 16px 0 0 16px;
+      }
+      .species-image svg {
+        object-fit: cover;
+        height: 100%;
+      }
+      .species-info {
+        padding: 0.8rem 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .species-desc { font-size: 0.8rem; margin-top: 0.4rem; }
       .breakdown { grid-template-columns: 1fr; }
       .container { padding: 1.2rem 1rem; }
     }
