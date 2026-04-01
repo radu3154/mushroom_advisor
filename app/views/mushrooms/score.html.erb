@@ -37,7 +37,7 @@
       season: "#{Date::MONTHNAMES[Date.today.month]}",
       temperature: stats[:avg_temp] ? "#{stats[:avg_temp]}\u00B0C avg" : nil,
       rain: stats[:total_rain] ? "#{stats[:total_rain]}mm / 7 #{@lang == 'ro' ? 'zile' : 'days'}" : nil,
-      timing: stats[:days_since_rain] ? "#{stats[:days_since_rain]} #{I18nHelper.t(:days_since_rain, @lang)}" : nil
+      timing: stats[:days_since_rain] ? "#{stats[:days_since_rain]} #{stats[:days_since_rain] == 1 ? (@lang == 'ro' ? 'zi de la ploaie' : 'day since rain') : (@lang == 'ro' ? 'zile de la ploaie' : 'days since rain')}" : nil
     } %>
     <% @result[:breakdown].each do |key, value| %>
       <div class="breakdown-item">
@@ -56,12 +56,14 @@
   </div>
 
   <!-- Best Time -->
-  <div class="best-time-box">
-    <span class="clock">⏰</span>
-    <div>
-      <strong><%= I18nHelper.t(:best_time, @lang) %></strong> <%= @result[:best_time] %>
+  <% if @result[:best_time] %>
+    <div class="best-time-box">
+      <span class="clock">⏰</span>
+      <div>
+        <strong><%= I18nHelper.t(:best_time, @lang) %></strong> <%= @result[:best_time] %>
+      </div>
     </div>
-  </div>
+  <% end %>
 
   <!-- Explanation -->
   <div class="info-section">
