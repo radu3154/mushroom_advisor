@@ -68,7 +68,7 @@
   <!-- Explanation -->
   <div class="info-section">
     <h3><%= I18nHelper.t(:what_data_says, @lang) %></h3>
-    <p style="font-size: 0.9rem; color: #555; line-height: 1.6;"><%= @result[:explanation] %></p>
+    <p style="font-size: 1.05rem; color: #555; line-height: 1.7;"><%= @result[:explanation] %></p>
     <% if @result[:weather].present? %>
       <p class="weather-note">
         <%= I18nHelper.t(:currently, @lang) %> <%= @result[:weather][:description] %>,
