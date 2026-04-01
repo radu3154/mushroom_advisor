@@ -64,7 +64,7 @@ class Location
         "postavaru" => { lat: 45.57, lon: 25.58, name_en: "Postavaru Mountains", name_ro: "Muntele Postăvaru" },
         "codlea" => { lat: 45.70, lon: 25.45, name_en: "Codlea Forest", name_ro: "Pădurea Codlea" }
       },
-      "Bucharest" => {
+      "București" => {
         "baneasa" => { lat: 44.50, lon: 26.07, name_en: "Baneasa Forest", name_ro: "Pădurea Băneasa" },
         "snagov" => { lat: 44.70, lon: 26.15, name_en: "Snagov Forest", name_ro: "Pădurea Snagov" },
         "cernica" => { lat: 44.40, lon: 26.22, name_en: "Cernica Forest", name_ro: "Pădurea Cernica" },

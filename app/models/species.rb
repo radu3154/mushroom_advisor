@@ -8,7 +8,7 @@ class Species
       description_ro: "Comoara cu căciulă în fagure a pădurilor de primăvară. Zbârciogii apar după ploi calde în păduri de foioase, mai ales lângă frăsini, ulmi și livezi vechi de meri.",
       season_months: [3, 4, 5],
       temp_range: { ideal_min: 8, ideal_max: 15, abs_min: 4, abs_max: 22 },
-      rain_range: { ideal_min: 10, ideal_max: 30, abs_min: 3, abs_max: 60 },
+      rain_range: { ideal_min: 10, ideal_max: 30, abs_min: 3, abs_max: 40 },
       delay_days: { ideal_min: 3, ideal_max: 5, abs_min: 1, abs_max: 8 },
       habitat: [
         "\u{1F34E} Old apple and pear orchards",
@@ -162,7 +162,7 @@ class Species
       description_ro: "Regele ciupercilor comestibile. Hribii prosperă în păduri mixte sub stejari, molizi și pini, după ploile de vară și toamnă.",
       season_months: [6, 7, 8, 9, 10],
       temp_range: { ideal_min: 12, ideal_max: 22, abs_min: 8, abs_max: 28 },
-      rain_range: { ideal_min: 15, ideal_max: 40, abs_min: 5, abs_max: 80 },
+      rain_range: { ideal_min: 15, ideal_max: 40, abs_min: 5, abs_max: 55 },
       delay_days: { ideal_min: 5, ideal_max: 10, abs_min: 3, abs_max: 14 },
       habitat: [
         "\u{1F332} Mixed conifer and deciduous forests",
@@ -316,7 +316,7 @@ class Species
       description_ro: "Trompetele aurii ale pădurii. Gălbiorii adoră pădurile umede cu mușchi și apar în valuri după ploile calde de vară.",
       season_months: [6, 7, 8, 9],
       temp_range: { ideal_min: 15, ideal_max: 25, abs_min: 10, abs_max: 30 },
-      rain_range: { ideal_min: 20, ideal_max: 50, abs_min: 8, abs_max: 90 },
+      rain_range: { ideal_min: 20, ideal_max: 50, abs_min: 8, abs_max: 70 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 7 },
       habitat: [
         "\u{1FAB4} Mossy hardwood and mixed forests",

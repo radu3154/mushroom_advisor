@@ -65,10 +65,9 @@ class ScoringEngine
       timing: score_timing
     }
 
-    # If temperature or rain is completely outside the absolute range, nothing grows
+    # If temperature is completely outside the absolute range, nothing grows
+    # Rain outside abs still scores normally (rain=0 but other factors count)
     total = if scores[:temperature] == 0 && out_of_abs_range?(:temp)
-              0
-            elsif scores[:rain] == 0 && out_of_abs_range?(:rain)
               0
             else
               scores.values.sum
@@ -147,12 +146,11 @@ class ScoringEngine
     end
   end
 
-  # Only show "best time to go" when it's actually useful:
-  # - Score > 0 (not hard-zeroed by extreme conditions)
-  # - Temperature and rain are at least marginal (> 0), otherwise
-  #   waiting more days won't help — the weather itself is wrong
+  # Only show "best time to go" when timing is the main limiting factor.
+  # Hide when temperature or rain are problematic — waiting won't fix those.
+  # Both temp and rain must be in ideal range (25) for timing advice to make sense.
   def show_best_time?(total, scores)
-    total > 0 && scores[:temperature] > 0 && scores[:rain] > 0
+    total > 0 && scores[:temperature] == 25 && scores[:rain] == 25
   end
 
   def zile(n)
