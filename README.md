@@ -16,11 +16,6 @@ Visit **http://localhost:3000** and pick a mushroom!
 
 Open-Meteo (historical rain data) needs no API key.
 
-```bash
-export OPEN_WEATHER_API_KEY=your_key_here
-bin/rails server
-```
-
 ## How It Works
 
 Select a species (Morel, Boletus, or Chanterelle) and the app scores current conditions on a 0–100 scale based on four factors:
