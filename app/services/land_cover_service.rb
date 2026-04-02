@@ -25,7 +25,19 @@ class LandCoverService
   #   { type: "unknown",    label_en: "Unknown terrain",    label_ro: "Teren nedetectat",    source: "none" }
   def self.detect(lat:, lon:, elevation: nil)
     result = query_overpass(lat, lon)
-    return result if result[:type] != "unknown"
+
+    if result[:type] != "unknown"
+      # Refine labels using elevation where it adds info:
+      # - Grassland above 1800m → "Alpine meadow" (not just "Meadow")
+      # - Forest without leaf_type → use elevation band to determine type
+      if result[:type] == "grassland" && elevation && elevation >= 1800
+        return { type: "grassland", label_en: "Alpine meadow", label_ro: "Pajiște alpină", source: "osm+elevation" }
+      end
+
+      if result[:meta] != :forest_no_leaf_type
+        return result
+      end
+    end
 
     # Fallback to elevation when Overpass can't determine type:
     # - Forest found but no leaf_type tag
