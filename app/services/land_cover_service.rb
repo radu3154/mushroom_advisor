@@ -5,6 +5,28 @@ require "uri"
 class LandCoverService
   OVERPASS_URL = "https://overpass-api.de/api/interpreter".freeze
 
+  # In-memory terrain cache — terrain doesn't change, so cache by rounded coords.
+  # Key: "lat,lon" rounded to 3 decimals (~111m precision). Max 500 entries.
+  @terrain_cache = {}
+  @cache_mutex = Mutex.new
+
+  def self.cache_key(lat, lon)
+    "#{lat.round(3)},#{lon.round(3)}"
+  end
+
+  def self.cached_overpass(lat, lon)
+    key = cache_key(lat, lon)
+    @cache_mutex.synchronize { @terrain_cache[key] }
+  end
+
+  def self.store_cache(lat, lon, result)
+    key = cache_key(lat, lon)
+    @cache_mutex.synchronize do
+      @terrain_cache.shift if @terrain_cache.size >= 500
+      @terrain_cache[key] = result
+    end
+  end
+
   # Romanian elevation bands (approximate):
   #   0–400m   — plains/lowland, could be anything (urban, farmland, forest)
   #   400–1000m — hills, mostly deciduous (fag, stejar, carpen)
@@ -23,60 +45,78 @@ class LandCoverService
   #   { type: "coniferous", label_en: "Coniferous forest", label_ro: "Pădure de conifere", source: "elevation" }
   #   { type: "grassland",  label_en: "Meadow",            label_ro: "Pajiște",             source: "osm" }
   #   { type: "unknown",    label_en: "Unknown terrain",    label_ro: "Teren nedetectat",    source: "none" }
+  # Two-phase detect: can run without elevation (for parallel execution),
+  # then refine_with_elevation() is called once weather data arrives.
+  # If elevation is provided upfront, does everything in one call.
   def self.detect(lat:, lon:, elevation: nil)
     result = query_overpass(lat, lon)
 
     if result[:type] != "unknown"
-      # Refine labels using elevation where it adds info:
-      # - Grassland above 1800m → "Alpine meadow" (not just "Meadow")
-      # - Forest without leaf_type → use elevation band to determine type
-      if result[:type] == "grassland" && elevation && elevation >= 1800
-        return { type: "grassland", label_en: "Alpine meadow", label_ro: "Pajiște alpină", source: "osm+elevation" }
-      end
-
       if result[:meta] != :forest_no_leaf_type
-        return result
+        # Grassland may need elevation refinement for alpine meadow
+        if result[:type] == "grassland"
+          if elevation && elevation >= 1800
+            return { type: "grassland", label_en: "Alpine meadow", label_ro: "Pajiște alpină", source: "osm+elevation" }
+          elsif elevation.nil?
+            return result.merge(needs_elevation: true)
+          end
+        end
+        return result.except(:meta)
       end
     end
 
-    # Fallback to elevation when Overpass can't determine type:
-    # - Forest found but no leaf_type tag
-    # - Nothing found but we're above 400m (likely forested hills/mountains)
-    if elevation && (result[:meta] == :forest_no_leaf_type || elevation >= 400)
-      guess = elevation_guess(elevation)
-      return guess if guess
+    # Needs elevation to resolve forest type or unknown terrain
+    if elevation
+      return refine_with_elevation(result, elevation)
     end
 
-    # If Overpass confirmed a forest but elevation band didn't match either
-    # (e.g. lowland < 400m), default to deciduous — lowland Romanian forests
-    # are almost exclusively broadleaf (stejar, fag, carpen)
-    if result[:meta] == :forest_no_leaf_type
-      return { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm_default" }
-    end
-
-    result.except(:meta)
+    # No elevation yet — flag for later refinement
+    result.merge(needs_elevation: true)
   rescue => e
     Rails.logger.warn "LandCoverService error: #{e.message}"
     { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "error" }
   end
 
+  # Second phase: refine terrain result using elevation from weather API.
+  # Called by controller after parallel fetch completes.
+  def self.refine_with_elevation(result, elevation)
+    result = result.except(:needs_elevation)
+
+    if result[:type] == "grassland" && elevation && elevation >= 1800
+      return { type: "grassland", label_en: "Alpine meadow", label_ro: "Pajiște alpină", source: "osm+elevation" }
+    end
+
+    if elevation && (result[:meta] == :forest_no_leaf_type || (result[:type] == "unknown" && elevation >= 400))
+      guess = elevation_guess(elevation)
+      return guess if guess
+    end
+
+    if result[:meta] == :forest_no_leaf_type
+      return { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm_default" }
+    end
+
+    result.except(:meta)
+  end
+
   private
 
   def self.query_overpass(lat, lon)
+    # Return cached result if available (terrain doesn't change)
+    cached = cached_overpass(lat, lon)
+    return cached if cached
+
     # Query for ANY landuse/natural tag — catch everything, classify in Ruby.
-    # is_in finds enclosing areas; around:500 catches nearby smaller features.
+    # is_in finds enclosing areas; around:300 catches nearby smaller features.
     query = <<~OQL
-      [out:json][timeout:12];
+      [out:json][timeout:8];
       is_in(#{lat},#{lon})->.enclosing;
       (
         area.enclosing["landuse"];
         area.enclosing["natural"];
         area.enclosing["leisure"];
-        way["landuse"](around:500,#{lat},#{lon});
-        way["natural"](around:500,#{lat},#{lon});
-        way["leisure"](around:500,#{lat},#{lon});
-        relation["landuse"](around:500,#{lat},#{lon});
-        relation["natural"](around:500,#{lat},#{lon});
+        way["landuse"](around:300,#{lat},#{lon});
+        way["natural"](around:300,#{lat},#{lon});
+        way["leisure"](around:300,#{lat},#{lon});
       );
       out tags;
     OQL
@@ -84,8 +124,8 @@ class LandCoverService
     uri = URI.parse(OVERPASS_URL)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.open_timeout = 10
-    http.read_timeout = 15
+    http.open_timeout = 8
+    http.read_timeout = 10
 
     request = Net::HTTP::Post.new(uri.request_uri)
     request.set_form_data("data" => query)
@@ -99,7 +139,9 @@ class LandCoverService
     data = JSON.parse(response.body)
     elements = data["elements"] || []
 
-    parse_overpass_elements(elements)
+    result = parse_overpass_elements(elements)
+    store_cache(lat, lon, result)
+    result
   end
 
   # Mushroom-relevant terrain classification from OSM tags.

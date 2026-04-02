@@ -20,19 +20,30 @@ class MushroomsController < ApplicationController
       return redirect_to root_path(lang: @lang)
     end
 
-    weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon)
+    # Fetch weather and terrain IN PARALLEL when terrain isn't cached.
+    # This saves ~2-5s compared to sequential calls.
+    terrain_cached = params[:terrain_type].present? && params[:terrain_label_en].present?
 
-    # Detect land cover (terrain type) at this location.
-    # Cache via params so language-switching doesn't re-query the Overpass API.
-    if params[:terrain_type].present? && params[:terrain_label_en].present?
+    if terrain_cached
       land_cover = {
         type: params[:terrain_type],
         label_en: params[:terrain_label_en],
         label_ro: params[:terrain_label_ro] || params[:terrain_label_en],
         source: "cached"
       }
+      weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon)
     else
-      land_cover = LandCoverService.detect(lat: lat, lon: lon, elevation: weather_data[:elevation])
+      weather_data = nil
+      land_cover = nil
+      weather_thread = Thread.new { weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon) }
+      terrain_thread = Thread.new { land_cover = LandCoverService.detect(lat: lat, lon: lon) }
+      weather_thread.join
+      terrain_thread.join
+
+      # Refine terrain with elevation from weather (alpine meadow, forest type)
+      if land_cover[:type] == "unknown" || land_cover.delete(:needs_elevation)
+        land_cover = LandCoverService.refine_with_elevation(land_cover, weather_data[:elevation])
+      end
     end
 
     result = ScoringEngine.new(species_key, weather_data, lang: @lang, land_cover: land_cover).call

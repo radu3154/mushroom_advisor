@@ -9,11 +9,13 @@ class WeatherService
   class WeatherError < StandardError; end
 
   def fetch_for_location(lat:, lon:)
-    # Current conditions from Open-Meteo forecast API (free, no key)
-    current = fetch_current(lat, lon)
-
-    # Historical rain + temp from Open-Meteo archive API (free, no key)
-    history = fetch_history(lat, lon)
+    # Fetch current conditions and historical data IN PARALLEL (saves ~2-3s)
+    current = nil
+    history = nil
+    current_thread = Thread.new { current = fetch_current(lat, lon) }
+    history_thread = Thread.new { history = fetch_history(lat, lon) }
+    current_thread.join
+    history_thread.join
 
     temp_data = extract_temp_from_history(history, current)
     rain_data = extract_rain_from_history(history)
@@ -75,10 +77,11 @@ class WeatherService
     }
   end
 
-  # Last 10 days of daily rain and temperature from Open-Meteo archive
+  # Last 8 days of daily rain and temperature from Open-Meteo archive
+  # (we only use the last 7 — one extra for days_since_rain look-back)
   def fetch_history(lat, lon)
     end_date = Date.today - 1  # archive doesn't include today
-    start_date = end_date - 10
+    start_date = end_date - 7
 
     url = "#{OPEN_METEO_ARCHIVE_URL}?latitude=#{lat}&longitude=#{lon}" \
           "&start_date=#{start_date}&end_date=#{end_date}" \
