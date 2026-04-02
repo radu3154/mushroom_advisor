@@ -5,11 +5,12 @@
   <%= hidden_field_tag :location_name, "", id: "selected-location-name" %>
   <%= hidden_field_tag :species, "", id: "selected-species" %>
 
-  <h2 class="section-title">🍄‍🟫 <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
+  <h2 class="section-title"><%= IconHelper.icon(:mushroom).html_safe %> <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
 
   <div class="species-grid">
     <% @species.each do |key, species| %>
       <div class="species-card" data-species="<%= key %>" onclick="selectSpecies(this, '<%= key %>')">
+        <div class="check-badge"><%= IconHelper.icon(:checkmark).html_safe %></div>
         <div class="species-image">
           <%= species[:svg].html_safe %>
         </div>
@@ -46,6 +47,7 @@
 <% end %>
 
 <script>
+  var pinIcon = '<%= j IconHelper.icon(:pin).html_safe %>';
   var currentLang = '<%= @lang %>';
   var speciesSelected = false;
   var locationSelected = false;
@@ -129,8 +131,8 @@
     locationSelected = true;
 
     var badge = document.getElementById('location-badge');
-    badge.textContent = '📍 ' + name;
-    badge.style.display = 'block';
+    badge.innerHTML = pinIcon + ' ' + name;
+    badge.style.display = 'flex';
     document.getElementById('map-hint').style.display = 'none';
 
     updateButton();
@@ -149,7 +151,7 @@
           var name = parts.length > 0 ? parts.join(', ') : (data.display_name || '').split(',').slice(0, 2).join(',');
           if (name) {
             document.getElementById('selected-location-name').value = name;
-            document.getElementById('location-badge').textContent = '📍 ' + name;
+            document.getElementById('location-badge').innerHTML = pinIcon + ' ' + name;
             // Update hint if ready
             updateButton();
           }

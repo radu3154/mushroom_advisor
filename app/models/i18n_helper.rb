@@ -28,6 +28,7 @@ class I18nHelper
       temperature: "Temperature",
       rain: "Rain",
       timing: "Timing",
+      habitat_label: "Terrain",
       days_since_rain: "days since rain"
     },
     "ro" => {
@@ -58,6 +59,7 @@ class I18nHelper
       temperature: "Temperatur\u0103",
       rain: "Ploaie",
       timing: "Timp",
+      habitat_label: "Teren",
       days_since_rain: "zile de la ploaie"
     }
   }.freeze

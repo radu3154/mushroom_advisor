@@ -50,15 +50,20 @@
       overflow: hidden;
     }
 
-    .header::before {
-      content: "🍂🌿🍄🌲🍃";
+    .header-decor {
       position: absolute;
       top: 8px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 1.2rem;
+      display: flex;
+      gap: 0.8rem;
       opacity: 0.3;
-      letter-spacing: 1rem;
+    }
+
+    .header-decor svg {
+      width: 1.2rem;
+      height: 1.2rem;
+      filter: brightness(0) invert(1);
     }
 
     .header h1 {
@@ -125,22 +130,18 @@
       border-color: var(--forest);
     }
 
-    .species-card.selected::after {
-      content: "✓";
+    .species-card .check-badge {
+      display: none;
       position: absolute;
       top: 12px;
       right: 12px;
-      background: var(--forest);
-      color: white;
       width: 28px;
       height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-      font-weight: 600;
       z-index: 2;
+    }
+
+    .species-card.selected .check-badge {
+      display: block;
     }
 
     .species-image {
@@ -257,6 +258,20 @@
       overflow: hidden;
       text-overflow: ellipsis;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .location-badge svg {
+      flex-shrink: 0;
+      width: 1em;
+      height: 1em;
+    }
+
+    .location-badge svg path,
+    .location-badge svg circle {
+      fill: white;
     }
 
     @media (max-width: 600px) {
@@ -475,19 +490,15 @@
     }
 
     .info-list li {
-      padding: 0.4rem 0 0.4rem 1.5rem;
-      position: relative;
+      padding: 0.4rem 0;
       font-size: 0.9rem;
       line-height: 1.5;
       color: #555;
     }
 
-    .info-list li {
-      padding-left: 0 !important;
-    }
-
-    .info-list li::before {
-      content: none;
+    .info-list li svg {
+      vertical-align: -0.15em;
+      margin-right: 0.3rem;
     }
 
     .best-time-box {
@@ -499,6 +510,13 @@
       align-items: center;
       gap: 0.8rem;
       font-size: 0.95rem;
+    }
+
+    .best-time-box .clock {
+      display: flex;
+      align-items: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
     }
 
 
@@ -608,6 +626,13 @@
 </head>
 <body>
   <div class="header">
+    <div class="header-decor">
+      <%= IconHelper.icon(:fallen_leaf).html_safe %>
+      <%= IconHelper.icon(:herb).html_safe %>
+      <%= IconHelper.icon(:mushroom).html_safe %>
+      <%= IconHelper.icon(:tree_conifer).html_safe %>
+      <%= IconHelper.icon(:leaf_flutter).html_safe %>
+    </div>
     <div class="lang-toggle">
       <% %w[en ro].each do |l| %>
         <% if request.post? %>

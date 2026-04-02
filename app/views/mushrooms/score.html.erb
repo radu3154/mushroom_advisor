@@ -25,18 +25,22 @@
 
   <!-- Score Breakdown -->
   <div class="breakdown">
-    <% max_scores = { season: 30, temperature: 30, rain: 30, timing: 10 } %>
+    <% max_scores = @result[:breakdown].key?(:habitat) ?
+         { season: 25, temperature: 25, rain: 25, habitat: 15, timing: 10 } :
+         { season: 30, temperature: 30, rain: 30, timing: 10 } %>
     <% stats = @result[:weather_stats] || {} %>
     <% breakdown_labels = {
       season: I18nHelper.t(:season, @lang),
       temperature: I18nHelper.t(:temperature, @lang),
       rain: I18nHelper.t(:rain, @lang),
+      habitat: I18nHelper.t(:habitat_label, @lang),
       timing: I18nHelper.t(:timing, @lang)
     } %>
     <% detail_labels = {
       season: "#{Date::MONTHNAMES[Date.today.month]}",
-      temperature: stats[:avg_temp] ? "#{stats[:avg_temp]}\u00B0C avg" : nil,
+      temperature: stats[:avg_temp] ? "#{stats[:avg_temp]}°C avg" : nil,
       rain: stats[:total_rain] ? "#{stats[:total_rain]}mm / 7 #{@lang == 'ro' ? 'zile' : 'days'}" : nil,
+      habitat: @result[:terrain_label],
       timing: stats[:days_since_rain] ? "#{stats[:days_since_rain]} #{stats[:days_since_rain] == 1 ? (@lang == 'ro' ? 'zi de la ploaie' : 'day since rain') : (@lang == 'ro' ? 'zile de la ploaie' : 'days since rain')}" : nil
     } %>
     <% @result[:breakdown].each do |key, value| %>
@@ -53,12 +57,17 @@
         </div>
       </div>
     <% end %>
+    <% unless @result[:breakdown].key?(:habitat) %>
+      <p style="font-size: 0.8rem; color: #bbb; margin: 0.5rem 0 0; text-align: right;">
+        <%= @lang == "ro" ? "Tipul de teren nu a putut fi detectat" : "Terrain type could not be detected" %>
+      </p>
+    <% end %>
   </div>
 
   <!-- Best Time -->
   <% if @result[:best_time] %>
     <div class="best-time-box">
-      <span class="clock">⏰</span>
+      <span class="clock"><%= IconHelper.icon(:clock).html_safe %></span>
       <div>
         <strong><%= I18nHelper.t(:best_time, @lang) %></strong> <%= @result[:best_time] %>
       </div>
@@ -74,10 +83,13 @@
         <%= I18nHelper.t(:currently, @lang) %> <%= @result[:weather][:description] %>,
         <%= @result[:weather][:current_temp] %>&deg;C,
         <%= I18nHelper.t(:humidity, @lang) %> <%= @result[:weather][:humidity] %>%
+        <% if @result[:weather_stats][:elevation] %>
+          &middot; <%= @result[:weather_stats][:elevation].round %>m alt.
+        <% end %>
       </p>
       <% if @result[:weather][:rain_daily].present? && @result[:weather][:rain_daily].any? %>
         <div class="rain-chart">
-          <p style="font-size: 0.8rem; color: #999; margin-bottom: 0.5rem;">🌧 <%= I18nHelper.t(:rainfall_chart, @lang) %></p>
+          <p style="font-size: 0.8rem; color: #999; margin-bottom: 0.5rem;"><%= IconHelper.icon(:rain_cloud).html_safe %> <%= I18nHelper.t(:rainfall_chart, @lang) %></p>
           <div class="rain-bars">
             <% max_rain = [@result[:weather][:rain_daily].map { |d| d[:rain_mm] }.max, 1].max %>
             <% @result[:weather][:rain_daily].each do |day| %>
@@ -100,7 +112,7 @@
     <h3><%= I18nHelper.t(:where_to_look, @lang) %></h3>
     <ul class="info-list">
       <% @result[:habitat].each do |spot| %>
-        <li><%= spot %></li>
+        <li><%= spot.html_safe %></li>
       <% end %>
     </ul>
   </div>
@@ -110,7 +122,7 @@
     <h3><%= I18nHelper.t(:foraging_tips, @lang) %></h3>
     <ul class="info-list tips">
       <% @result[:tips].each do |tip| %>
-        <li><%= tip %></li>
+        <li><%= tip.html_safe %></li>
       <% end %>
     </ul>
   </div>

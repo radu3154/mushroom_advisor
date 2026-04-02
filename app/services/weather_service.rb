@@ -18,11 +18,15 @@ class WeatherService
     temp_data = extract_temp_from_history(history, current)
     rain_data = extract_rain_from_history(history)
 
+    # Elevation comes from the forecast API response
+    elevation = current[:elevation]
+
     {
       avg_temp: temp_data[:avg].round(1),
       total_rain_7d: rain_data[:total_7d].round(1),
       days_since_rain: rain_data[:days_since],
       current_month: Time.now.month,
+      elevation: elevation,
       raw: {
         current_temp: current[:temp],
         description: current[:description],
@@ -66,7 +70,8 @@ class WeatherService
     {
       temp: current["temperature_2m"],
       humidity: current["relative_humidity_2m"],
-      description: weather_code_to_text(current["weather_code"])
+      description: weather_code_to_text(current["weather_code"]),
+      elevation: data["elevation"]
     }
   end
 
