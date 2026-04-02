@@ -87,6 +87,11 @@ class LandCoverService
       return { type: "grassland", label_en: "Alpine meadow", label_ro: "Pajiște alpină", source: "osm+elevation" }
     end
 
+    # Nothing found + at or below sea level → water (open sea, lake surface).
+    if result[:type] == "unknown" && elevation && elevation <= 0
+      return terrain_result("water", "elevation")
+    end
+
     if elevation && (result[:meta] == :forest_no_leaf_type || (result[:type] == "unknown" && elevation >= 400))
       guess = elevation_guess(elevation)
       return guess if guess
@@ -118,6 +123,8 @@ class LandCoverService
         way["landuse"](around:300,#{lat},#{lon});
         way["natural"](around:300,#{lat},#{lon});
         way["leisure"](around:300,#{lat},#{lon});
+        way["waterway"](around:50,#{lat},#{lon});
+        relation["natural"="water"](around:50,#{lat},#{lon});
       );
       out tags;
     OQL
@@ -166,6 +173,16 @@ class LandCoverService
     "heath"      => :grassland,
     "wetland"    => :grassland,
     "fell"       => :grassland,
+    # water bodies — tell the user they're on water, not land
+    "water"      => :water,
+    "lake"       => :water,
+    "pond"       => :water,
+    "reservoir"  => :water,
+    "basin"      => :water,
+    "riverbank"  => :water,
+    "sea"        => :water,
+    "bay"        => :water,
+    "strait"     => :water,
   }.freeze
 
   # Large-scale geographic features that don't describe local land cover.
@@ -174,7 +191,7 @@ class LandCoverService
   # or the elevation-based fallback.
   IGNORE_TAGS = %w[
     mountain_range ridge peak saddle cliff volcano
-    bay peninsula coastline strait water sea
+    peninsula coastline
     continent country state region county
     protected_area national_park
   ].to_set.freeze
@@ -188,19 +205,27 @@ class LandCoverService
     scrubland:  { en: "Scrubland",          ro: "Tufăriș" },
     farmland:   { en: "Farmland",           ro: "Teren agricol" },
     park:       { en: "Park",               ro: "Parc" },
+    water:      { en: "Water",              ro: "Apă" },
   }.freeze
 
   def self.parse_overpass_elements(elements)
     return { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" } if elements.empty?
 
     # Collect all landuse and natural tags
-    categories = { forest: [], grassland: [], orchard: [], scrubland: [], farmland: [], park: [], other: [] }
+    categories = { forest: [], grassland: [], orchard: [], scrubland: [], farmland: [], park: [], water: [], other: [] }
 
     elements.each do |e|
       tags = e["tags"] || {}
       landuse = tags["landuse"]
       natural = tags["natural"]
       leisure = tags["leisure"]
+      waterway = tags["waterway"]
+
+      # Waterway tags (river, stream, canal, lake) always map to water
+      if waterway
+        categories[:water] << e
+        next
+      end
 
       tag_val = landuse || natural || leisure
       next if tag_val && IGNORE_TAGS.include?(tag_val)
@@ -230,8 +255,8 @@ class LandCoverService
       end
     end
 
-    # 2-6. Other terrain types in priority order
-    %i[orchard grassland scrubland farmland park].each do |cat|
+    # 2-7. Other terrain types in priority order (water last — land cover wins)
+    %i[orchard grassland scrubland farmland park water].each do |cat|
       if categories[cat].any?
         return terrain_result(cat.to_s, "osm")
       end

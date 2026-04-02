@@ -30,6 +30,11 @@ class ScoringEngine
     "ro" => { tier: "out-of-season", label: "ÎN AFARA SEZONULUI", message: "Această specie nu fructifică în această perioadă. Revino când se deschide sezonul." }
   }.freeze
 
+  WATER_LABELS = {
+    "en" => { tier: "skip", label: "SKIP", message: "Mushrooms don't grow underwater. Unless you're looking for fish." },
+    "ro" => { tier: "skip", label: "EVITĂ", message: "Ciupercile nu cresc sub apă. Doar dacă pescuiești." }
+  }.freeze
+
   MONTH_NAMES_RO = [nil, "Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
                     "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"].freeze
 
@@ -49,6 +54,22 @@ class ScoringEngine
   end
 
   def call
+    if @land_cover[:type] == "water"
+      wl = WATER_LABELS[@lang] || WATER_LABELS["en"]
+      return {
+        score: 0,
+        breakdown: { season: 0, temperature: 0, rain: 0, habitat: 0, timing: 0 },
+        tier: wl[:tier],
+        label: wl[:label],
+        message: wl[:message],
+        on_water: true,
+        best_time: nil,
+        explanation: @lang == "ro" ? "Ai plasat pinul pe apă. Mută-l pe uscat!" : "You pinned on water. Move the pin to dry land!",
+        habitat: Species.localized(@species, :habitat, @lang),
+        tips: Species.localized(@species, :tips, @lang)
+      }
+    end
+
     unless in_season?
       oos = OUT_OF_SEASON_LABELS[@lang] || OUT_OF_SEASON_LABELS["en"]
       species_name = Species.localized(@species, :name, @lang)

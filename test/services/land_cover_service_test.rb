@@ -278,6 +278,95 @@ class LandCoverServiceTest < Minitest::Test
       "Real forest should be detected, mountain_range ignored"
   end
 
+  # ── Water detection ───────────────────────────────────────────────────
+
+  def test_water_from_natural
+    elements = [{ "tags" => { "natural" => "water" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+    assert_equal "Water", result[:label_en]
+    assert_equal "Apă", result[:label_ro]
+  end
+
+  def test_lake_maps_to_water
+    elements = [{ "tags" => { "natural" => "lake" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_reservoir_maps_to_water
+    elements = [{ "tags" => { "landuse" => "reservoir" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_sea_maps_to_water
+    elements = [{ "tags" => { "natural" => "sea" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+    assert_equal "Water", result[:label_en]
+  end
+
+  def test_waterway_river_maps_to_water
+    elements = [{ "tags" => { "waterway" => "river", "name" => "Bahlui" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_waterway_lake_maps_to_water
+    elements = [{ "tags" => { "waterway" => "lake" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_bay_maps_to_water
+    elements = [{ "tags" => { "natural" => "bay" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_forest_beats_water
+    elements = [
+      { "tags" => { "natural" => "water" } },
+      { "tags" => { "landuse" => "forest", "leaf_type" => "broadleaved" } }
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type],
+      "Real forest should have priority over water"
+  end
+
+  def test_meadow_beats_water
+    elements = [
+      { "tags" => { "natural" => "water" } },
+      { "tags" => { "landuse" => "meadow" } }
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type],
+      "Real meadow should have priority over water"
+  end
+
+  # ── Open water (nothing from Overpass + sea-level elevation) ──────────
+
+  def test_open_sea_detected_by_zero_elevation
+    result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, 0)
+    assert_equal "water", refined[:type]
+    assert_equal "Water", refined[:label_en]
+  end
+
+  def test_open_sea_detected_by_negative_elevation
+    result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, -5)
+    assert_equal "water", refined[:type]
+  end
+
+  def test_low_land_not_misclassified_as_water
+    result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, 15)
+    # 15m is low land, not water — should stay unknown (below 400m threshold)
+    assert_equal "unknown", refined[:type]
+  end
+
   # ── Cache tests ──────────────────────────────────────────────────────
 
   def test_cache_key_rounds_to_3_decimals
