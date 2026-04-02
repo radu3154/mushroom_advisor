@@ -37,7 +37,7 @@
       timing: I18nHelper.t(:timing, @lang)
     } %>
     <% detail_labels = {
-      season: "#{Date::MONTHNAMES[Date.today.month]}",
+      season: "#{@lang == 'ro' ? ScoringEngine::MONTH_NAMES_RO[Date.today.month] : Date::MONTHNAMES[Date.today.month]}",
       temperature: stats[:avg_temp] ? "#{stats[:avg_temp]}°C avg" : nil,
       rain: stats[:total_rain] ? "#{stats[:total_rain]}mm / 7 #{@lang == 'ro' ? 'zile' : 'days'}" : nil,
       habitat: @result[:terrain_label],

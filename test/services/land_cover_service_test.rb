@@ -319,6 +319,19 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "water", result[:type]
   end
 
+  def test_water_tag_lake_maps_to_water
+    elements = [{ "tags" => { "water" => "lake", "name" => "Lacul Ciric" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type],
+      "water=lake tag should be detected as water"
+  end
+
+  def test_water_tag_reservoir_maps_to_water
+    elements = [{ "tags" => { "water" => "reservoir" } }]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
   def test_bay_maps_to_water
     elements = [{ "tags" => { "natural" => "bay" } }]
     result = LandCoverService.send(:parse_overpass_elements, elements)
@@ -369,15 +382,15 @@ class LandCoverServiceTest < Minitest::Test
 
   # ── Cache tests ──────────────────────────────────────────────────────
 
-  def test_cache_key_rounds_to_3_decimals
-    key1 = LandCoverService.cache_key(45.59123, 25.46412)
-    key2 = LandCoverService.cache_key(45.59149, 25.46449)
-    assert_equal key1, key2, "Nearby coords should share cache key"
+  def test_cache_key_rounds_to_2_decimals
+    key1 = LandCoverService.cache_key(45.591, 25.462)
+    key2 = LandCoverService.cache_key(45.594, 25.464)
+    assert_equal key1, key2, "Coords within ~1km should share cache key"
   end
 
   def test_cache_key_differs_for_distant_coords
-    key1 = LandCoverService.cache_key(45.591, 25.464)
-    key2 = LandCoverService.cache_key(45.600, 25.470)
+    key1 = LandCoverService.cache_key(45.59, 25.46)
+    key2 = LandCoverService.cache_key(45.61, 25.48)
     refute_equal key1, key2
   end
 end

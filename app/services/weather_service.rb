@@ -33,7 +33,7 @@ class WeatherService
         current_temp: current[:temp],
         description: current[:description],
         humidity: current[:humidity],
-        rain_daily: rain_data[:daily]
+        rain_daily: rain_data[:daily].last(7)
       }
     }
   rescue => e
@@ -113,16 +113,25 @@ class WeatherService
     }
   end
 
-  # Use only daily means from the archive for scoring, not the current live temp.
-  # The current temp can be misleading (e.g. cold at night) and would skew the average.
+  # Weighted temperature: recent days matter more for mushroom fruiting.
+  # Uses last 3 days' average (70%) blended with the current live temp (30%).
+  # A week-long average is too sluggish — mushrooms respond to recent warmth.
   def extract_temp_from_history(history, current)
     temps = history.dig("daily", "temperature_2m_mean") || []
     temps = temps.compact
 
     if temps.any?
-      { avg: temps.sum / temps.size.to_f }
+      recent = temps.last(3)
+      recent_avg = recent.sum / recent.size.to_f
+      live = current[:temp]
+
+      if live
+        blended = (recent_avg * 0.7) + (live * 0.3)
+        { avg: blended }
+      else
+        { avg: recent_avg }
+      end
     else
-      # Fallback to current temp only if we have no historical data at all
       { avg: current[:temp] || 10.0 }
     end
   end

@@ -4,15 +4,22 @@ require "uri"
 require "set"
 
 class LandCoverService
-  OVERPASS_URL = "https://overpass-api.de/api/interpreter".freeze
+  # Primary + fallback Overpass instances for resilience.
+  # The main server is in Germany; Kumi is a community mirror.
+  OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+  ].freeze
 
   # In-memory terrain cache — terrain doesn't change, so cache by rounded coords.
-  # Key: "lat,lon" rounded to 3 decimals (~111m precision). Max 500 entries.
+  # Key: "lat,lon" rounded to 2 decimals (~1.1km precision). Max 2000 entries.
+  # 2 decimals is fine: terrain doesn't change within ~1km, and it massively
+  # increases cache hit rate for nearby pins.
   @terrain_cache = {}
   @cache_mutex = Mutex.new
 
   def self.cache_key(lat, lon)
-    "#{lat.round(3)},#{lon.round(3)}"
+    "#{lat.round(2)},#{lon.round(2)}"
   end
 
   def self.cached_overpass(lat, lon)
@@ -23,7 +30,7 @@ class LandCoverService
   def self.store_cache(lat, lon, result)
     key = cache_key(lat, lon)
     @cache_mutex.synchronize do
-      @terrain_cache.shift if @terrain_cache.size >= 500
+      @terrain_cache.shift if @terrain_cache.size >= 2000
       @terrain_cache[key] = result
     end
   end
@@ -111,10 +118,8 @@ class LandCoverService
     cached = cached_overpass(lat, lon)
     return cached if cached
 
-    # Query for ANY landuse/natural tag — catch everything, classify in Ruby.
-    # is_in finds enclosing areas; around:300 catches nearby smaller features.
     query = <<~OQL
-      [out:json][timeout:8];
+      [out:json][timeout:6];
       is_in(#{lat},#{lon})->.enclosing;
       (
         area.enclosing["landuse"];
@@ -123,33 +128,43 @@ class LandCoverService
         way["landuse"](around:300,#{lat},#{lon});
         way["natural"](around:300,#{lat},#{lon});
         way["leisure"](around:300,#{lat},#{lon});
-        way["waterway"](around:50,#{lat},#{lon});
-        relation["natural"="water"](around:50,#{lat},#{lon});
+        way["waterway"](around:100,#{lat},#{lon});
+        relation["natural"="water"](around:500,#{lat},#{lon});
+        relation["water"](around:500,#{lat},#{lon});
       );
       out tags;
     OQL
 
-    uri = URI.parse(OVERPASS_URL)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.open_timeout = 8
-    http.read_timeout = 10
+    # Try each Overpass server with tight timeouts; fall back to elevation-only
+    OVERPASS_URLS.each do |base_url|
+      begin
+        uri = URI.parse(base_url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http.open_timeout = 5
+        http.read_timeout = 7
 
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request.set_form_data("data" => query)
+        request = Net::HTTP::Post.new(uri.request_uri)
+        request.set_form_data("data" => query)
 
-    response = http.request(request)
-    unless response.is_a?(Net::HTTPSuccess)
-      Rails.logger.warn "Overpass API returned #{response.code}"
-      return { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "api_error" }
+        response = http.request(request)
+        next unless response.is_a?(Net::HTTPSuccess)
+
+        data = JSON.parse(response.body)
+        elements = data["elements"] || []
+
+        result = parse_overpass_elements(elements)
+        store_cache(lat, lon, result)
+        return result
+      rescue Net::OpenTimeout, Net::ReadTimeout, StandardError => e
+        Rails.logger.warn "Overpass #{base_url} failed: #{e.message}"
+        next
+      end
     end
 
-    data = JSON.parse(response.body)
-    elements = data["elements"] || []
-
-    result = parse_overpass_elements(elements)
-    store_cache(lat, lon, result)
-    result
+    # All Overpass servers failed — return unknown, let elevation fallback handle it
+    Rails.logger.warn "All Overpass servers failed for #{lat},#{lon}"
+    { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "api_error" }
   end
 
   # Mushroom-relevant terrain classification from OSM tags.
@@ -220,9 +235,10 @@ class LandCoverService
       natural = tags["natural"]
       leisure = tags["leisure"]
       waterway = tags["waterway"]
+      water = tags["water"]
 
-      # Waterway tags (river, stream, canal, lake) always map to water
-      if waterway
+      # Waterway tags (river, stream, canal) or water tags (lake, reservoir, pond)
+      if waterway || water
         categories[:water] << e
         next
       end
