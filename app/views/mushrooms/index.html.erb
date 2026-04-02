@@ -59,7 +59,8 @@
     ready: "<%= j I18nHelper.t(:hint_ready, @lang) %>",
     locating: "<%= j I18nHelper.t(:locating, @lang) %>",
     locationError: "<%= j I18nHelper.t(:location_error, @lang) %>",
-    useMyLocation: "<%= j I18nHelper.t(:use_my_location, @lang) %>"
+    useMyLocation: "<%= j I18nHelper.t(:use_my_location, @lang) %>",
+    tapMapHint: "<%= j I18nHelper.t(:tap_map_hint, @lang) %>"
   };
 
   // Fix Leaflet default marker icon path (broken when loaded from CDN)
@@ -157,10 +158,23 @@
       .catch(function() { /* keep coordinates as fallback */ });
   }
 
+  function showMapError(msg) {
+    var hint = document.getElementById('map-hint');
+    hint.textContent = msg;
+    hint.style.display = 'block';
+    hint.style.background = 'rgba(220,53,69,0.9)';
+    hint.style.color = 'white';
+    setTimeout(function() {
+      hint.style.background = 'rgba(255,255,255,0.92)';
+      hint.style.color = '#666';
+      hint.textContent = hints.tapMapHint;
+    }, 4000);
+  }
+
   // GPS button
   function useMyLocation() {
     if (!navigator.geolocation) {
-      alert(hints.locationError);
+      showMapError(hints.locationError);
       return;
     }
     var btn = document.getElementById('gps-btn');
@@ -181,7 +195,7 @@
       function(err) {
         btn.disabled = false;
         btnText.textContent = hints.useMyLocation;
-        alert(hints.locationError);
+        showMapError(hints.locationError);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
