@@ -35,6 +35,13 @@ class LandCoverService
       return guess if guess
     end
 
+    # If Overpass confirmed a forest but elevation band didn't match either
+    # (e.g. lowland < 400m), default to deciduous — lowland Romanian forests
+    # are almost exclusively broadleaf (stejar, fag, carpen)
+    if result[:meta] == :forest_no_leaf_type
+      return { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm_default" }
+    end
+
     result.except(:meta)
   rescue => e
     Rails.logger.warn "LandCoverService error: #{e.message}"
@@ -44,21 +51,20 @@ class LandCoverService
   private
 
   def self.query_overpass(lat, lon)
-    # Use is_in to find what area the point falls inside (works for large forests)
-    # plus around:300 as fallback for smaller features not mapped as areas
+    # Query for ANY landuse/natural tag — catch everything, classify in Ruby.
+    # is_in finds enclosing areas; around:500 catches nearby smaller features.
     query = <<~OQL
-      [out:json][timeout:10];
+      [out:json][timeout:12];
       is_in(#{lat},#{lon})->.enclosing;
       (
-        area.enclosing["landuse"="forest"];
-        area.enclosing["natural"="wood"];
-        area.enclosing["landuse"="meadow"];
-        area.enclosing["landuse"="grass"];
-        area.enclosing["natural"="grassland"];
-        way["landuse"="forest"](around:300,#{lat},#{lon});
-        way["natural"="wood"](around:300,#{lat},#{lon});
-        way["landuse"="meadow"](around:300,#{lat},#{lon});
-        way["natural"="grassland"](around:300,#{lat},#{lon});
+        area.enclosing["landuse"];
+        area.enclosing["natural"];
+        area.enclosing["leisure"];
+        way["landuse"](around:500,#{lat},#{lon});
+        way["natural"](around:500,#{lat},#{lon});
+        way["leisure"](around:500,#{lat},#{lon});
+        relation["landuse"](around:500,#{lat},#{lon});
+        relation["natural"](around:500,#{lat},#{lon});
       );
       out tags;
     OQL
@@ -84,33 +90,100 @@ class LandCoverService
     parse_overpass_elements(elements)
   end
 
+  # Mushroom-relevant terrain classification from OSM tags.
+  # Priority: forest > orchard > grassland > scrub > farmland > park > other detected > unknown
+  TERRAIN_MAP = {
+    # landuse values
+    "forest"     => :forest,
+    "meadow"     => :grassland,
+    "grass"      => :grassland,
+    "orchard"    => :orchard,
+    "vineyard"   => :farmland,
+    "farmland"   => :farmland,
+    "allotments" => :farmland,
+    "village_green" => :grassland,
+    "recreation_ground" => :grassland,
+    # natural values
+    "wood"       => :forest,
+    "grassland"  => :grassland,
+    "scrub"      => :scrubland,
+    "heath"      => :grassland,
+    "wetland"    => :grassland,
+  }.freeze
+
+  TERRAIN_LABELS = {
+    deciduous:  { en: "Deciduous forest",  ro: "Pădure de foioase" },
+    coniferous: { en: "Coniferous forest",  ro: "Pădure de conifere" },
+    mixed:      { en: "Mixed forest",       ro: "Pădure mixtă" },
+    grassland:  { en: "Meadow",             ro: "Pajiște" },
+    orchard:    { en: "Orchard",            ro: "Livadă" },
+    scrubland:  { en: "Scrubland",          ro: "Tufăriș" },
+    farmland:   { en: "Farmland",           ro: "Teren agricol" },
+    park:       { en: "Park",               ro: "Parc" },
+  }.freeze
+
   def self.parse_overpass_elements(elements)
     return { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" } if elements.empty?
 
-    # Check for forest/wood first (higher priority for mushroom hunting)
-    forests = elements.select { |e| %w[forest wood].include?(e.dig("tags", "landuse")) || %w[wood].include?(e.dig("tags", "natural")) }
-    grasslands = elements.select { |e| %w[meadow grass].include?(e.dig("tags", "landuse")) || e.dig("tags", "natural") == "grassland" }
+    # Collect all landuse and natural tags
+    categories = { forest: [], grassland: [], orchard: [], scrubland: [], farmland: [], park: [], other: [] }
 
-    if forests.any?
-      # Check if any forest has leaf_type tagged
-      leaf_types = forests.map { |e| e.dig("tags", "leaf_type") }.compact
+    elements.each do |e|
+      tags = e["tags"] || {}
+      landuse = tags["landuse"]
+      natural = tags["natural"]
+      leisure = tags["leisure"]
+
+      tag_val = landuse || natural || leisure
+      cat = TERRAIN_MAP[tag_val]
+
+      if cat
+        categories[cat] << e
+      elsif leisure && %w[park garden nature_reserve].include?(leisure)
+        categories[:park] << e
+      elsif tag_val
+        categories[:other] << e
+      end
+    end
+
+    # 1. Forest/wood — highest priority, try to determine leaf type
+    if categories[:forest].any?
+      leaf_types = categories[:forest].map { |e| e.dig("tags", "leaf_type") }.compact
       if leaf_types.include?("broadleaved")
-        return { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm" }
+        return terrain_result("deciduous", "osm")
       elsif leaf_types.include?("needleleaved")
-        return { type: "coniferous", label_en: "Coniferous forest", label_ro: "Pădure de conifere", source: "osm" }
+        return terrain_result("coniferous", "osm")
       elsif leaf_types.include?("mixed")
-        return { type: "mixed", label_en: "Mixed forest", label_ro: "Pădure mixtă", source: "osm" }
+        return terrain_result("mixed", "osm")
       else
-        # Forest found but no leaf_type tag — will fall back to elevation
         return { type: "unknown", label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "osm_partial", meta: :forest_no_leaf_type }
       end
     end
 
-    if grasslands.any?
-      return { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    # 2-6. Other terrain types in priority order
+    %i[orchard grassland scrubland farmland park].each do |cat|
+      if categories[cat].any?
+        return terrain_result(cat.to_s, "osm")
+      end
+    end
+
+    # 7. Something was found but not in our map — still better than "unknown"
+    if categories[:other].any?
+      first = categories[:other].first["tags"] || {}
+      tag = first["landuse"] || first["natural"] || first["leisure"] || "detected"
+      return { type: "other", label_en: tag.tr("_", " ").capitalize, label_ro: tag.tr("_", " ").capitalize, source: "osm" }
     end
 
     { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
+  end
+
+  def self.terrain_result(type, source)
+    labels = TERRAIN_LABELS[type.to_sym]
+    if labels
+      { type: type, label_en: labels[:en], label_ro: labels[:ro], source: source }
+    else
+      { type: type, label_en: type.tr("_", " ").capitalize, label_ro: type.tr("_", " ").capitalize, source: source }
+    end
   end
 
   def self.elevation_guess(elevation)

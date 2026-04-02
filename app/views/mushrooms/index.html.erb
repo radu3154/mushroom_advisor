@@ -5,7 +5,7 @@
   <%= hidden_field_tag :location_name, "", id: "selected-location-name" %>
   <%= hidden_field_tag :species, "", id: "selected-species" %>
 
-  <h2 class="section-title"><%= IconHelper.icon(:mushroom).html_safe %> <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
+  <h2 class="section-title"><%= IconHelper.icon(:amanita).html_safe %> <%= I18nHelper.t(:pick_mushroom, @lang) %></h2>
 
   <div class="species-grid">
     <% @species.each do |key, species| %>
@@ -131,7 +131,9 @@
     locationSelected = true;
 
     var badge = document.getElementById('location-badge');
-    badge.innerHTML = pinIcon + ' ' + name;
+    badge.innerHTML = pinIcon + ' ';
+    var nameNode = document.createTextNode(name);
+    badge.appendChild(nameNode);
     badge.style.display = 'flex';
     document.getElementById('map-hint').style.display = 'none';
 
@@ -151,7 +153,9 @@
           var name = parts.length > 0 ? parts.join(', ') : (data.display_name || '').split(',').slice(0, 2).join(',');
           if (name) {
             document.getElementById('selected-location-name').value = name;
-            document.getElementById('location-badge').innerHTML = pinIcon + ' ' + name;
+            var b = document.getElementById('location-badge');
+            b.innerHTML = pinIcon + ' ';
+            b.appendChild(document.createTextNode(name));
             // Update hint if ready
             updateButton();
           }
