@@ -142,7 +142,7 @@ class ScoringEngineTest < Minitest::Test
 
   def test_water_terrain_scores_zero
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "osm" }
+    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "nominatim" }
     result = ScoringEngine.new("morel", w, lang: "en", land_cover: lc).call
     assert_equal 0, result[:score]
     assert_equal "skip", result[:tier]
@@ -152,7 +152,7 @@ class ScoringEngineTest < Minitest::Test
 
   def test_water_terrain_romanian
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "osm" }
+    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "nominatim" }
     result = ScoringEngine.new("morel", w, lang: "ro", land_cover: lc).call
     assert_equal 0, result[:score]
     assert_includes result[:explanation], "apă"
@@ -160,7 +160,7 @@ class ScoringEngineTest < Minitest::Test
 
   def test_water_applies_to_all_species
     w = weather(temp: 17, rain: 30, days_since: 7, month: 8)
-    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "osm" }
+    lc = { type: "water", label_en: "Water", label_ro: "Apă", source: "nominatim" }
     Species.keys.each do |key|
       result = ScoringEngine.new(key, w, lang: "en", land_cover: lc).call
       assert_equal 0, result[:score], "#{key} on water should score 0"
