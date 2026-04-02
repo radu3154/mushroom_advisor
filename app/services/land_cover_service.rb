@@ -1,6 +1,7 @@
 require "net/http"
 require "json"
 require "uri"
+require "set"
 
 class LandCoverService
   OVERPASS_URL = "https://overpass-api.de/api/interpreter".freeze
@@ -157,13 +158,26 @@ class LandCoverService
     "allotments" => :farmland,
     "village_green" => :grassland,
     "recreation_ground" => :grassland,
+    "pasture"    => :grassland,
     # natural values
     "wood"       => :forest,
     "grassland"  => :grassland,
     "scrub"      => :scrubland,
     "heath"      => :grassland,
     "wetland"    => :grassland,
+    "fell"       => :grassland,
   }.freeze
+
+  # Large-scale geographic features that don't describe local land cover.
+  # These get returned by is_in() for huge enclosing relations (e.g. the entire
+  # Carpathian range) and must be IGNORED so we fall through to real land cover
+  # or the elevation-based fallback.
+  IGNORE_TAGS = %w[
+    mountain_range ridge peak saddle cliff volcano
+    bay peninsula coastline strait water sea
+    continent country state region county
+    protected_area national_park
+  ].to_set.freeze
 
   TERRAIN_LABELS = {
     deciduous:  { en: "Deciduous forest",  ro: "Pădure de foioase" },
@@ -189,6 +203,8 @@ class LandCoverService
       leisure = tags["leisure"]
 
       tag_val = landuse || natural || leisure
+      next if tag_val && IGNORE_TAGS.include?(tag_val)
+
       cat = TERRAIN_MAP[tag_val]
 
       if cat
