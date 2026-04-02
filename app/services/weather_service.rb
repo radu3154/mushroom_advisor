@@ -8,7 +8,12 @@ class WeatherService
 
   class WeatherError < StandardError; end
 
-  def fetch_for_location(lat:, lon:)
+  # temp_window: number of days to average for temperature (species-specific).
+  #   Morels (7): soil temperature proxy — mycelium integrates warmth over ~20 days.
+  #   Boletus (5): moisture matters more, but 5-day captures post-rain cooling.
+  #   Chanterelle (7): fruiting correlates with temps 1-2 weeks prior.
+  # Defaults to 7 if not provided.
+  def fetch_for_location(lat:, lon:, temp_window: 7)
     # Fetch current conditions and historical data IN PARALLEL (saves ~2-3s)
     current = nil
     history = nil
@@ -17,7 +22,7 @@ class WeatherService
     current_thread.join
     history_thread.join
 
-    temp_data = extract_temp_from_history(history, current)
+    temp_data = extract_temp_from_history(history, current, temp_window)
     rain_data = extract_rain_from_history(history)
 
     # Elevation comes from the forecast API response
@@ -77,11 +82,12 @@ class WeatherService
     }
   end
 
-  # Last 8 days of daily rain and temperature from Open-Meteo archive
-  # (we only use the last 7 — one extra for days_since_rain look-back)
+  # Last 10 days of daily rain and temperature from Open-Meteo archive.
+  # We fetch 10 days so species with temp_window=7 get a full 7-day average,
+  # and we have 3 extra for days_since_rain look-back. Rain chart shows last 7.
   def fetch_history(lat, lon)
     end_date = Date.today - 1  # archive doesn't include today
-    start_date = end_date - 7
+    start_date = end_date - 9  # 10 days total
 
     url = "#{OPEN_METEO_ARCHIVE_URL}?latitude=#{lat}&longitude=#{lon}" \
           "&start_date=#{start_date}&end_date=#{end_date}" \
@@ -113,24 +119,20 @@ class WeatherService
     }
   end
 
-  # Weighted temperature: recent days matter more for mushroom fruiting.
-  # Uses last 3 days' average (70%) blended with the current live temp (30%).
-  # A week-long average is too sluggish — mushrooms respond to recent warmth.
-  def extract_temp_from_history(history, current)
+  # Species-specific temperature averaging.
+  # Uses the last N days (temp_window) of daily mean temperatures — no live
+  # temp blending. Mycelium doesn't respond to a warm afternoon; it integrates
+  # sustained conditions over days. Live temp added noise and made the readings
+  # too reactive for all three species.
+  # Fallback: current live temp if archive data is missing.
+  def extract_temp_from_history(history, current, temp_window)
     temps = history.dig("daily", "temperature_2m_mean") || []
     temps = temps.compact
 
     if temps.any?
-      recent = temps.last(3)
-      recent_avg = recent.sum / recent.size.to_f
-      live = current[:temp]
-
-      if live
-        blended = (recent_avg * 0.7) + (live * 0.3)
-        { avg: blended }
-      else
-        { avg: recent_avg }
-      end
+      window = temps.last(temp_window)
+      avg = window.sum / window.size.to_f
+      { avg: avg }
     else
       { avg: current[:temp] || 10.0 }
     end

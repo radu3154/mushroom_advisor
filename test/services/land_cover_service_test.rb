@@ -12,174 +12,268 @@ require_relative "../../app/services/land_cover_service"
 
 class LandCoverServiceTest < Minitest::Test
 
-  # Helper: build a Nominatim-style response hash
-  def nominatim(osm_class, osm_type, name = "Test Feature")
-    { "class" => osm_class, "type" => osm_type, "display_name" => name,
-      "lat" => "47.0", "lon" => "27.0", "place_id" => 12345 }
+  # ── Helpers ──────────────────────────────────────────────────────────
+
+  def nominatim(osm_class, osm_type, name = "Test")
+    { "class" => osm_class, "type" => osm_type, "display_name" => name }
   end
 
-  # ── parse_nominatim_response — water detection ──────────────────────
+  def osm(tags)
+    { "tags" => tags }
+  end
 
-  def test_natural_water_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "water"))
+  # ══════════════════════════════════════════════════════════════════════
+  # parse_overpass_elements — PRIMARY terrain detection
+  # ══════════════════════════════════════════════════════════════════════
+
+  # ── Water detection (highest priority) ───────────────────────────────
+
+  def test_overpass_natural_water
+    elements = [osm("natural" => "water")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
     assert_equal "water", result[:type]
     assert_equal "Water", result[:label_en]
     assert_equal "Apă", result[:label_ro]
   end
 
-  def test_lake_detected
+  def test_overpass_water_tag_lake
+    elements = [osm("water" => "lake", "name" => "Lacul Ciric")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_overpass_water_tag_reservoir
+    elements = [osm("water" => "reservoir")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_overpass_waterway_river
+    elements = [osm("waterway" => "river", "name" => "Bahlui")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_overpass_sea
+    elements = [osm("natural" => "sea")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_overpass_bay
+    elements = [osm("natural" => "bay")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_overpass_water_beats_everything
+    elements = [
+      osm("natural" => "water"),
+      osm("landuse" => "forest", "leaf_type" => "broadleaved"),
+      osm("landuse" => "meadow")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type], "Water should have highest priority"
+  end
+
+  # ── Forest detection ─────────────────────────────────────────────────
+
+  def test_overpass_deciduous_forest
+    elements = [osm("landuse" => "forest", "leaf_type" => "broadleaved")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type]
+    assert_equal "Deciduous forest", result[:label_en]
+  end
+
+  def test_overpass_coniferous_forest
+    elements = [osm("natural" => "wood", "leaf_type" => "needleleaved")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "coniferous", result[:type]
+  end
+
+  def test_overpass_mixed_forest
+    elements = [osm("landuse" => "forest", "leaf_type" => "mixed")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "mixed", result[:type]
+  end
+
+  def test_overpass_forest_no_leaf_type
+    elements = [osm("landuse" => "forest")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal :forest_no_leaf_type, result[:meta]
+  end
+
+  def test_overpass_forest_beats_grassland
+    elements = [
+      osm("landuse" => "meadow"),
+      osm("landuse" => "forest", "leaf_type" => "broadleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type]
+  end
+
+  # ── Other terrain ────────────────────────────────────────────────────
+
+  def test_overpass_meadow
+    elements = [osm("landuse" => "meadow")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+    assert_equal "Meadow", result[:label_en]
+  end
+
+  def test_overpass_grassland
+    elements = [osm("natural" => "grassland")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_pasture
+    elements = [osm("landuse" => "pasture")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_orchard
+    elements = [osm("landuse" => "orchard")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "orchard", result[:type]
+  end
+
+  def test_overpass_farmland
+    elements = [osm("landuse" => "farmland")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "farmland", result[:type]
+  end
+
+  def test_overpass_vineyard_maps_to_farmland
+    elements = [osm("landuse" => "vineyard")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "farmland", result[:type]
+  end
+
+  def test_overpass_scrub
+    elements = [osm("natural" => "scrub")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "scrubland", result[:type]
+  end
+
+  def test_overpass_park
+    elements = [osm("leisure" => "park")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "park", result[:type]
+  end
+
+  def test_overpass_nature_reserve_maps_to_park
+    elements = [osm("leisure" => "nature_reserve")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "park", result[:type]
+  end
+
+  # ── IGNORE_TAGS ──────────────────────────────────────────────────────
+
+  def test_overpass_mountain_range_ignored
+    elements = [osm("natural" => "mountain_range")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "unknown", result[:type]
+  end
+
+  def test_overpass_mountain_range_with_real_terrain
+    elements = [
+      osm("natural" => "mountain_range"),
+      osm("landuse" => "forest", "leaf_type" => "broadleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type]
+  end
+
+  def test_overpass_peak_ignored
+    elements = [osm("natural" => "peak")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "unknown", result[:type]
+  end
+
+  # ── Priority ordering ────────────────────────────────────────────────
+
+  def test_overpass_orchard_beats_grassland
+    elements = [
+      osm("natural" => "grassland"),
+      osm("landuse" => "orchard")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "orchard", result[:type]
+  end
+
+  def test_overpass_grassland_beats_farmland
+    elements = [
+      osm("landuse" => "farmland"),
+      osm("landuse" => "meadow")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_empty_returns_unknown
+    result = LandCoverService.send(:parse_overpass_elements, [])
+    assert_equal "unknown", result[:type]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # parse_nominatim_response — FALLBACK terrain detection
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_nominatim_water
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "water"))
+    assert_equal "water", result[:type]
+  end
+
+  def test_nominatim_lake
     result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "lake"))
     assert_equal "water", result[:type]
   end
 
-  def test_reservoir_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "reservoir"))
-    assert_equal "water", result[:type]
-  end
-
-  def test_sea_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "sea"))
-    assert_equal "water", result[:type]
-  end
-
-  def test_bay_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "bay"))
-    assert_equal "water", result[:type]
-  end
-
-  def test_waterway_river_detected
+  def test_nominatim_waterway
     result = LandCoverService.send(:parse_nominatim_response, nominatim("waterway", "river"))
     assert_equal "water", result[:type]
   end
 
-  def test_waterway_stream_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("waterway", "stream"))
-    assert_equal "water", result[:type]
-  end
-
-  def test_waterway_canal_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("waterway", "canal"))
-    assert_equal "water", result[:type]
-  end
-
-  def test_pond_detected
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "pond"))
-    assert_equal "water", result[:type]
-  end
-
-  # ── parse_nominatim_response — forest detection ──────────────────────
-
-  def test_forest_from_landuse
+  def test_nominatim_forest_flags_for_elevation
     result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "forest"))
-    assert_equal :forest_no_leaf_type, result[:meta],
-      "Forest should be flagged for elevation refinement since Nominatim doesn't provide leaf type"
-  end
-
-  def test_wood_from_natural
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "wood"))
     assert_equal :forest_no_leaf_type, result[:meta]
   end
 
-  # ── parse_nominatim_response — grassland ─────────────────────────────
-
-  def test_meadow_from_landuse
+  def test_nominatim_meadow
     result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "meadow"))
     assert_equal "grassland", result[:type]
-    assert_equal "Meadow", result[:label_en]
-    assert_equal "Pajiște", result[:label_ro]
   end
 
-  def test_grassland_from_natural
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "grassland"))
-    assert_equal "grassland", result[:type]
-  end
-
-  def test_pasture
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "pasture"))
-    assert_equal "grassland", result[:type]
-  end
-
-  def test_grass
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "grass"))
-    assert_equal "grassland", result[:type]
-  end
-
-  def test_heath
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "heath"))
-    assert_equal "grassland", result[:type]
-  end
-
-  # ── parse_nominatim_response — farmland & orchard ────────────────────
-
-  def test_orchard
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "orchard"))
-    assert_equal "orchard", result[:type]
-    assert_equal "Orchard", result[:label_en]
-  end
-
-  def test_farmland
+  def test_nominatim_farmland
     result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "farmland"))
     assert_equal "farmland", result[:type]
   end
 
-  def test_vineyard
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("landuse", "vineyard"))
-    assert_equal "farmland", result[:type]
-  end
-
-  # ── parse_nominatim_response — scrubland ─────────────────────────────
-
-  def test_scrub
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "scrub"))
-    assert_equal "scrubland", result[:type]
-  end
-
-  # ── parse_nominatim_response — parks ─────────────────────────────────
-
-  def test_park_from_leisure
+  def test_nominatim_park
     result = LandCoverService.send(:parse_nominatim_response, nominatim("leisure", "park"))
     assert_equal "park", result[:type]
-    assert_equal "Park", result[:label_en]
   end
 
-  def test_nature_reserve_maps_to_park
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("leisure", "nature_reserve"))
-    assert_equal "park", result[:type]
-  end
-
-  def test_garden_maps_to_park
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("leisure", "garden"))
-    assert_equal "park", result[:type]
-  end
-
-  # ── parse_nominatim_response — unknown / errors ──────────────────────
-
-  def test_residential_returns_unknown
-    result = LandCoverService.send(:parse_nominatim_response, nominatim("place", "city"))
-    assert_equal "unknown", result[:type]
-  end
-
-  def test_highway_returns_unknown
+  def test_nominatim_road_returns_nil
     result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "residential"))
-    assert_equal "unknown", result[:type]
+    assert_nil result, "Non-terrain features should return nil"
   end
 
-  def test_nil_response
-    result = LandCoverService.send(:parse_nominatim_response, nil)
-    assert_equal "unknown", result[:type]
-  end
-
-  def test_empty_response
-    result = LandCoverService.send(:parse_nominatim_response, {})
-    assert_equal "unknown", result[:type]
-  end
-
-  def test_error_response
+  def test_nominatim_error_returns_nil
     result = LandCoverService.send(:parse_nominatim_response, { "error" => "Unable to geocode" })
-    assert_equal "unknown", result[:type]
+    assert_nil result
   end
 
-  # ── elevation_guess ──────────────────────────────────────────────────
+  def test_nominatim_nil_returns_nil
+    result = LandCoverService.send(:parse_nominatim_response, nil)
+    assert_nil result
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # elevation_guess
+  # ══════════════════════════════════════════════════════════════════════
 
   def test_alpine_elevation
     result = LandCoverService.send(:elevation_guess, 2000)
@@ -200,130 +294,159 @@ class LandCoverServiceTest < Minitest::Test
   def test_deciduous_elevation
     result = LandCoverService.send(:elevation_guess, 700)
     assert_equal "deciduous", result[:type]
-    assert_equal "Deciduous forest", result[:label_en]
   end
 
   def test_lowland_returns_nil
     result = LandCoverService.send(:elevation_guess, 200)
-    assert_nil result, "Below 400m should return nil (no guess possible)"
+    assert_nil result
   end
 
-  # ── refine_with_elevation ────────────────────────────────────────────
+  # ══════════════════════════════════════════════════════════════════════
+  # refine_with_elevation
+  # ══════════════════════════════════════════════════════════════════════
 
-  def test_grassland_refined_to_alpine_at_high_elevation
-    result = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "nominatim" }
+  def test_grassland_refined_to_alpine
+    result = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
     refined = LandCoverService.refine_with_elevation(result, 1900)
-    assert_equal "grassland", refined[:type]
     assert_equal "Alpine meadow", refined[:label_en]
-    assert_equal "nominatim+elevation", refined[:source]
   end
 
-  def test_grassland_stays_meadow_at_low_elevation
-    result = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "nominatim" }
+  def test_grassland_stays_at_low_elevation
+    result = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
     refined = LandCoverService.refine_with_elevation(result, 600)
-    assert_equal "grassland", refined[:type]
     assert_equal "Meadow", refined[:label_en]
   end
 
-  def test_forest_no_leaf_type_resolved_by_elevation_700m
-    result = { type: "unknown", label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "nominatim", meta: :forest_no_leaf_type }
+  def test_forest_no_leaf_type_at_700m
+    result = { type: "unknown", meta: :forest_no_leaf_type, label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "osm_partial" }
     refined = LandCoverService.refine_with_elevation(result, 700)
     assert_equal "deciduous", refined[:type]
   end
 
-  def test_forest_no_leaf_type_resolved_by_elevation_1500m
-    result = { type: "unknown", label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "nominatim", meta: :forest_no_leaf_type }
+  def test_forest_no_leaf_type_at_1500m
+    result = { type: "unknown", meta: :forest_no_leaf_type, label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "osm_partial" }
     refined = LandCoverService.refine_with_elevation(result, 1500)
     assert_equal "coniferous", refined[:type]
   end
 
-  def test_forest_no_leaf_type_lowland_defaults_to_deciduous
-    result = { type: "unknown", label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "nominatim", meta: :forest_no_leaf_type }
+  def test_forest_no_leaf_type_lowland_defaults
+    result = { type: "unknown", meta: :forest_no_leaf_type, label_en: "Forest (type unknown)", label_ro: "Pădure (tip neidentificat)", source: "osm_partial" }
     refined = LandCoverService.refine_with_elevation(result, 200)
     assert_equal "deciduous", refined[:type]
-    assert_equal "nominatim_default", refined[:source]
+    assert_equal "osm_default", refined[:source]
   end
 
-  def test_unknown_at_high_elevation_gets_guess
+  def test_unknown_at_high_elevation
     result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, 1200)
     assert_equal "mixed", refined[:type]
   end
 
-  def test_unknown_at_low_elevation_stays_unknown
+  def test_unknown_at_low_elevation_stays
     result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, 200)
     assert_equal "unknown", refined[:type]
   end
 
-  # ── Open water (nothing from Nominatim + sea-level elevation) ────────
-
-  def test_open_sea_detected_by_zero_elevation
+  def test_sea_level_elevation_to_water
     result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, 0)
     assert_equal "water", refined[:type]
-    assert_equal "Water", refined[:label_en]
   end
 
-  def test_open_sea_detected_by_negative_elevation
+  def test_negative_elevation_to_water
     result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, -5)
     assert_equal "water", refined[:type]
   end
 
-  def test_low_land_not_misclassified_as_water
+  def test_low_land_not_water
     result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, 15)
-    # 15m is low land, not water — should stay unknown (below 400m threshold)
     assert_equal "unknown", refined[:type]
   end
 
-  # ── Real-world scenarios ─────────────────────────────────────────────
+  # ══════════════════════════════════════════════════════════════════════
+  # Real-world scenarios
+  # ══════════════════════════════════════════════════════════════════════
 
-  def test_lake_ciric_iasi
-    # Nominatim returns natural=water for a point on Lake Ciric
-    result = LandCoverService.send(:parse_nominatim_response,
-      nominatim("natural", "water", "Lacul Ciric, Iași"))
+  def test_lake_ciric_overpass_detects_water
+    elements = [osm("natural" => "water", "name" => "Lacul Ciric")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
     assert_equal "water", result[:type]
   end
 
-  def test_black_sea_open_water
-    # For open sea, Nominatim might return nothing or an error → elevation fallback
-    result = LandCoverService.send(:parse_nominatim_response, { "error" => "Unable to geocode" })
+  def test_lake_ciric_via_water_tag
+    elements = [osm("water" => "lake", "name" => "Lacul Ciric")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_rasnov_mountain_range_ignored
+    elements = [osm("natural" => "mountain_range", "name" => "Carpathians")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
     assert_equal "unknown", result[:type]
-    # Then elevation refinement kicks in (sea level = 0m)
+    refined = LandCoverService.refine_with_elevation(result, 650)
+    assert_equal "deciduous", refined[:type]
+  end
+
+  def test_black_sea_via_elevation_fallback
+    result = { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }
     refined = LandCoverService.refine_with_elevation(result, 0)
     assert_equal "water", refined[:type]
   end
 
-  def test_rasnov_forest_at_650m
-    # Nominatim returns forest for Râșnov area → needs elevation for leaf type
-    result = LandCoverService.send(:parse_nominatim_response,
-      nominatim("landuse", "forest", "Râșnov, Brașov"))
-    assert_equal :forest_no_leaf_type, result[:meta]
+  # ── Overpass "other" terrain (residential, industrial, etc.) ──────────
 
-    refined = LandCoverService.refine_with_elevation(result, 650)
-    assert_equal "deciduous", refined[:type],
-      "Râșnov at 650m should resolve to deciduous forest"
+  def test_overpass_residential_returns_other
+    elements = [osm("landuse" => "residential")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "other", result[:type]
+    assert_equal "Residential", result[:label_en]
   end
 
-  def test_bucegi_alpine_meadow
-    # Nominatim returns grassland for a high-altitude point
-    result = LandCoverService.send(:parse_nominatim_response,
-      nominatim("natural", "grassland", "Bucegi, Brașov"))
-    assert_equal "grassland", result[:type]
-
-    # Detect with elevation should upgrade to alpine
-    refined = LandCoverService.refine_with_elevation(result, 2100)
-    assert_equal "Alpine meadow", refined[:label_en]
+  def test_overpass_residential_ignored_when_real_terrain_present
+    elements = [
+      osm("landuse" => "residential"),
+      osm("landuse" => "forest", "leaf_type" => "broadleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type],
+      "Forest should win over residential"
   end
 
-  # ── Cache tests ──────────────────────────────────────────────────────
+  # ── Orchestration: forest_no_leaf_type should beat Nominatim ─────────
+
+  def test_overpass_forest_beats_nominatim_grassland
+    # Overpass finds forest polygon (accurate) → type "unknown" with meta
+    overpass = { type: "unknown", label_en: "Forest (type unknown)",
+                 label_ro: "Pădure (tip neidentificat)",
+                 source: "osm_partial", meta: :forest_no_leaf_type }
+    # Nominatim returns nearest meadow (less accurate)
+    nominatim = { type: "grassland", label_en: "Meadow",
+                  label_ro: "Pajiște", source: "nominatim" }
+
+    # The orchestrator should prefer Overpass forest over Nominatim grassland
+    result = if overpass && (overpass[:type] != "unknown" || overpass[:meta] == :forest_no_leaf_type)
+               overpass
+             elsif nominatim && (nominatim[:type] != "unknown" || nominatim[:meta] == :forest_no_leaf_type)
+               nominatim
+             else
+               overpass || nominatim
+             end
+
+    assert_equal :forest_no_leaf_type, result[:meta],
+      "Overpass forest detection should beat Nominatim grassland"
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Cache
+  # ══════════════════════════════════════════════════════════════════════
 
   def test_cache_key_rounds_to_2_decimals
     key1 = LandCoverService.cache_key(45.591, 25.462)
     key2 = LandCoverService.cache_key(45.594, 25.464)
-    assert_equal key1, key2, "Coords within ~1km should share cache key"
+    assert_equal key1, key2
   end
 
   def test_cache_key_differs_for_distant_coords

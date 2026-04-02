@@ -10,6 +10,9 @@ class Species
       temp_range: { ideal_min: 8, ideal_max: 15, abs_min: 4, abs_max: 22 },
       rain_range: { ideal_min: 10, ideal_max: 35, abs_min: 3, abs_max: 55 },
       delay_days: { ideal_min: 3, ideal_max: 5, abs_min: 1, abs_max: 10 },
+      # Morels respond to sustained soil warmth (~20-day accumulation).
+      # 7-day air temp average is the best proxy we have for soil temperature.
+      temp_window: 7,
       # Terrain scoring: ideal types get max, partial gets half, bad gets 0
       preferred_terrain: { ideal: ["deciduous", "grassland", "orchard"], partial: ["mixed", "scrubland", "farmland", "park"], bad: ["coniferous", "water"] },
       habitat: [
@@ -166,6 +169,9 @@ class Species
       temp_range: { ideal_min: 13, ideal_max: 21, abs_min: 8, abs_max: 28 },
       rain_range: { ideal_min: 15, ideal_max: 45, abs_min: 5, abs_max: 70 },
       delay_days: { ideal_min: 5, ideal_max: 10, abs_min: 2, abs_max: 14 },
+      # Boletus cares more about moisture than temperature.
+      # 5-day average captures post-rain cooling events that trigger fruiting.
+      temp_window: 5,
       # Boletus thrives in mixed forests, fine in both pure types, less in grassland
       preferred_terrain: { ideal: ["mixed", "deciduous", "coniferous"], partial: ["grassland", "orchard", "scrubland", "park"], bad: ["farmland", "water"] },
       habitat: [
@@ -322,6 +328,9 @@ class Species
       temp_range: { ideal_min: 15, ideal_max: 25, abs_min: 10, abs_max: 30 },
       rain_range: { ideal_min: 20, ideal_max: 55, abs_min: 8, abs_max: 85 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 2, abs_max: 7 },
+      # Chanterelle fruiting correlates with temps 1-2 weeks prior.
+      # 7-day average matches the literature on thermal integration.
+      temp_window: 7,
       # Chanterelles love deciduous/mixed forests, ok in coniferous, rare in grassland
       preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "scrubland", "park"], bad: ["grassland", "orchard", "farmland", "water"] },
       habitat: [

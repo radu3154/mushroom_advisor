@@ -11,7 +11,8 @@ class MushroomsController < ApplicationController
     lon = params[:lon].to_f
     location_name = params[:location_name].presence || "#{lat.round(2)}, #{lon.round(2)}"
 
-    unless Species.find(species_key)
+    species_info = Species.find(species_key)
+    unless species_info
       return render json: { error: "Unknown species" }, status: :unprocessable_entity
     end
 
@@ -20,8 +21,10 @@ class MushroomsController < ApplicationController
       return redirect_to root_path(lang: @lang)
     end
 
+    # Species-specific temp averaging window (soil-temp proxy for morels, etc.)
+    temp_window = species_info[:temp_window] || 7
+
     # Fetch weather and terrain IN PARALLEL when terrain isn't cached.
-    # This saves ~2-5s compared to sequential calls.
     terrain_cached = params[:terrain_type].present? && params[:terrain_label_en].present?
 
     if terrain_cached
@@ -31,11 +34,11 @@ class MushroomsController < ApplicationController
         label_ro: params[:terrain_label_ro] || params[:terrain_label_en],
         source: "cached"
       }
-      weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon)
+      weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon, temp_window: temp_window)
     else
       weather_data = nil
       land_cover = nil
-      weather_thread = Thread.new { weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon) }
+      weather_thread = Thread.new { weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon, temp_window: temp_window) }
       terrain_thread = Thread.new { land_cover = LandCoverService.detect(lat: lat, lon: lon) }
       weather_thread.join
       terrain_thread.join
@@ -47,7 +50,6 @@ class MushroomsController < ApplicationController
     end
 
     result = ScoringEngine.new(species_key, weather_data, lang: @lang, land_cover: land_cover).call
-    species_info = Species.find(species_key)
 
     # Inject terrain into params so the lang-switch form carries it forward
     params[:terrain_type] = land_cover[:type]

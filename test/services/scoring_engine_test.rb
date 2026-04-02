@@ -42,7 +42,8 @@ class ScoringEngineTest < Minitest::Test
     engine = ScoringEngine.new("morel", w, lang: "en", land_cover: land_cover(type: "deciduous"))
     result = engine.call
     assert result[:score] >= 70, "Morel in ideal conditions should score >= 70, got #{result[:score]}"
-    assert_equal "excellent", result[:tier] || "good" == result[:tier]
+    assert %w[excellent good].include?(result[:tier]),
+      "Morel peak conditions should be excellent or good, got #{result[:tier]}"
   end
 
   def test_morel_out_of_season
