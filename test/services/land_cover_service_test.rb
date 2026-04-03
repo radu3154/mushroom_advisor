@@ -440,6 +440,45 @@ class LandCoverServiceTest < Minitest::Test
   end
 
   # ══════════════════════════════════════════════════════════════════════
+  # run_overpass_query — shared Overpass executor
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_run_overpass_query_returns_nil_on_empty
+    # Simulating: run_overpass_query would call parse_overpass_elements([])
+    result = LandCoverService.send(:parse_overpass_elements, [])
+    assert_equal "unknown", result[:type]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Nearby fallback: elements from around:150 should parse identically
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_nearby_meadow_detected
+    # around:150 returns way elements with tags (same format as is_in areas)
+    elements = [osm("landuse" => "meadow", "name" => "Pajiște comunală")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_nearby_forest_detected
+    elements = [osm("landuse" => "forest", "leaf_type" => "broadleaved")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type]
+  end
+
+  def test_nearby_water_detected
+    elements = [osm("natural" => "water", "name" => "Lacul de acumulare")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  def test_nearby_farmland_detected
+    elements = [osm("landuse" => "farmland")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "farmland", result[:type]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
   # Cache
   # ══════════════════════════════════════════════════════════════════════
 

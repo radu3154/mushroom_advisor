@@ -156,10 +156,11 @@ class ScoringEngine
   end
 
   # Scoring for a value within a range spec.
-  # Sweet spot (center of ideal) → max_score, edges of ideal → ~48% of max.
+  # Ideal range is treated as genuinely good — the whole range scores 80-100%.
+  # Mushrooms don't have a single "perfect" temp; the entire ideal range works.
   # Marginal zone: gradient from just below floor near ideal edge → 1 at abs edge.
   # Outside abs → 0.
-  IDEAL_FLOOR_RATIO = 0.48
+  IDEAL_FLOOR_RATIO = 0.80
 
   def score_range_smooth(value, range, max_score)
     floor = (max_score * IDEAL_FLOOR_RATIO).round

@@ -5,18 +5,22 @@ require "set"
 
 class LandCoverService
   # ── API endpoints ────────────────────────────────────────────────────
-  # Two parallel strategies for terrain detection:
+  # Three-tier terrain detection:
   #
   # 1. Overpass is_in() — PRIMARY. Fast point-in-polygon check (~200-500ms).
-  #    Uses only is_in() (spatial index lookup), NOT around() radius searches.
-  #    The old query was slow (3-10s) because it had around() scans; is_in() alone
-  #    is an order of magnitude faster. Detects water, forests, farmland, parks.
+  #    Uses is_in() (spatial index lookup). Detects water, forests, farmland, parks.
   #
-  # 2. Nominatim reverse geocode — FALLBACK. Fast (~200ms) but returns the
-  #    nearest address, not land cover. Often gives roads/buildings instead of
-  #    the forest/lake you're standing on. Useful when Overpass is down.
+  # 2. Overpass around:150 — NEARBY FALLBACK. Only runs when is_in() returns empty
+  #    (the point isn't inside any mapped polygon). Searches for landuse/natural
+  #    features within 150m. Catches unmapped gaps between polygons (~300-800ms).
+  #    Many rural areas in Romania have incomplete OSM polygon coverage but have
+  #    nearby features that reveal the actual terrain.
   #
-  # Both run in parallel; Overpass result wins when available.
+  # 3. Nominatim reverse geocode — LAST RESORT. Runs in parallel with Overpass.
+  #    Returns nearest address, not land cover — often gives roads/buildings
+  #    instead of the forest/lake you're standing on.
+  #
+  # Overpass (is_in → around) runs first; Nominatim runs in parallel as backup.
   NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse".freeze
   OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
@@ -180,12 +184,16 @@ class LandCoverService
     result
   end
 
-  # ── Overpass: is_in() terrain check (PRIMARY) ────────────────────────
-  # Uses ONLY is_in() — a fast spatial index lookup (~200-500ms).
-  # No around() radius scans (those were the 3-10s bottleneck).
-  # Checks landuse, natural, leisure, and water in one query.
+  # ── Overpass: terrain check (PRIMARY + NEARBY FALLBACK) ───────────────
+  # Step 1: is_in() — fast spatial index lookup (~200-500ms).
+  # Step 2: If is_in() returns empty, try around:150 — searches for nearby
+  #         landuse/natural features within 150m (~300-800ms). Many rural
+  #         areas in Romania lack polygon coverage but have features nearby.
+  # The old slow query used around:5000+ which scanned huge areas (3-10s).
+  # around:150 is small enough to be fast but catches unmapped gaps.
   def self.query_overpass_terrain(lat, lon)
-    query = <<~OQL
+    # Step 1: Fast point-in-polygon check
+    is_in_query = <<~OQL
       [out:json][timeout:4];
       is_in(#{lat},#{lon})->.a;
       (
@@ -197,6 +205,38 @@ class LandCoverService
       out tags;
     OQL
 
+    result = run_overpass_query(is_in_query)
+    return result if result && (result[:type] != "unknown" || result[:meta] == :forest_no_leaf_type)
+
+    # Step 2: Nearby features fallback — only runs when is_in() found nothing.
+    # Searches ways and relations within 150m for landuse/natural tags.
+    nearby_query = <<~OQL
+      [out:json][timeout:4];
+      (
+        way["landuse"](around:150,#{lat},#{lon});
+        way["natural"](around:150,#{lat},#{lon});
+        way["leisure"](around:150,#{lat},#{lon});
+        way["water"](around:150,#{lat},#{lon});
+        relation["landuse"](around:150,#{lat},#{lon});
+        relation["natural"](around:150,#{lat},#{lon});
+        relation["water"](around:150,#{lat},#{lon});
+      );
+      out tags 5;
+    OQL
+
+    nearby_result = run_overpass_query(nearby_query)
+    if nearby_result && (nearby_result[:type] != "unknown" || nearby_result[:meta] == :forest_no_leaf_type)
+      # Tag source as "osm_nearby" so we know it came from the fallback
+      nearby_result[:source] = nearby_result[:source]&.sub("osm", "osm_nearby") || "osm_nearby"
+      return nearby_result
+    end
+
+    # Both Overpass strategies failed — return whatever we got (or nil)
+    result || nearby_result
+  end
+
+  # Run an Overpass query against available servers, parse elements.
+  def self.run_overpass_query(query)
     OVERPASS_URLS.each do |base_url|
       begin
         uri = URI.parse(base_url)
@@ -220,7 +260,7 @@ class LandCoverService
       end
     end
 
-    nil  # All servers failed — Nominatim fallback will be used
+    nil  # All servers failed
   end
 
   # Parse Overpass is_in() elements with priority ordering.
