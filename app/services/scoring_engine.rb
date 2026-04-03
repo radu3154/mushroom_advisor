@@ -97,8 +97,10 @@ class ScoringEngine
     }
     scores[:habitat] = score_habitat if @terrain_known
 
-    # If temperature is completely outside the absolute range, nothing grows
-    total = if scores[:temperature] == 0 && out_of_abs_range?(:temp)
+    # If temperature OR rain is completely outside the absolute range, nothing grows.
+    # Both are hard biological constraints — no warmth or no moisture = no fruiting.
+    total = if (scores[:temperature] == 0 && out_of_abs_range?(:temp)) ||
+               (scores[:rain] == 0 && out_of_abs_range?(:rain))
               0
             else
               scores.values.sum
@@ -207,6 +209,9 @@ class ScoringEngine
     when :temp
       temp = @weather[:avg_temp]
       temp < @species[:temp_range][:abs_min] || temp > @species[:temp_range][:abs_max]
+    when :rain
+      rain = @weather[:total_rain_7d]
+      rain < @species[:rain_range][:abs_min] || rain > @species[:rain_range][:abs_max]
     else
       false
     end
