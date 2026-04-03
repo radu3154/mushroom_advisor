@@ -3,10 +3,48 @@ require "json"
 require "uri"
 
 class WeatherService
-  OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive".freeze
-  OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast".freeze
+  # Single endpoint — past_days gives us history, no need for the archive API.
+  # Old approach: 2 parallel calls (forecast + archive) = 2 TCP+SSL handshakes.
+  # New approach: 1 call with past_days=10 = 1 handshake, half the latency.
+  OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast".freeze
 
   class WeatherError < StandardError; end
+
+  # ── In-memory cache ──────────────────────────────────────────────────
+  # Weather doesn't change fast enough to justify re-fetching for every
+  # request at the same spot. 5-minute TTL, 2-decimal key (~1.1km).
+  @weather_cache = {}
+  @cache_mutex = Mutex.new
+  CACHE_TTL = 300  # 5 minutes
+
+  def self.cache_key(lat, lon)
+    "#{lat.round(2)},#{lon.round(2)}"
+  end
+
+  def self.cached_weather(lat, lon)
+    key = cache_key(lat, lon)
+    @cache_mutex.synchronize do
+      entry = @weather_cache[key]
+      if entry && (Time.now - entry[:at]) < CACHE_TTL
+        entry[:data]
+      else
+        @weather_cache.delete(key) if entry  # expired
+        nil
+      end
+    end
+  end
+
+  def self.store_cache(lat, lon, data)
+    key = cache_key(lat, lon)
+    @cache_mutex.synchronize do
+      # Evict oldest if cache is too big
+      if @weather_cache.size >= 500
+        oldest_key = @weather_cache.min_by { |_, v| v[:at] }&.first
+        @weather_cache.delete(oldest_key) if oldest_key
+      end
+      @weather_cache[key] = { data: data, at: Time.now }
+    end
+  end
 
   # temp_window: number of days to average for temperature (species-specific).
   #   Morels (7): soil temperature proxy — mycelium integrates warmth over ~20 days.
@@ -14,48 +52,47 @@ class WeatherService
   #   Chanterelle (7): fruiting correlates with temps 1-2 weeks prior.
   # Defaults to 7 if not provided.
   def fetch_for_location(lat:, lon:, temp_window: 7)
-    # Fetch current conditions and historical data IN PARALLEL (saves ~2-3s)
-    current = nil
-    history = nil
-    current_thread = Thread.new { current = fetch_current(lat, lon) }
-    history_thread = Thread.new { history = fetch_history(lat, lon) }
-    current_thread.join
-    history_thread.join
+    # Check cache first (shared across instances via class-level cache)
+    cached = self.class.cached_weather(lat, lon)
+    if cached
+      # Re-process with the requested temp_window (species-specific)
+      return build_result(cached[:current], cached[:daily], temp_window)
+    end
 
-    temp_data = extract_temp_from_history(history, current, temp_window)
-    rain_data = extract_rain_from_history(history)
+    # Single API call: current conditions + 10 days of daily history.
+    # past_days=10 tells the forecast API to include 10 days of history.
+    # forecast_days=1 includes today (needed for current conditions).
+    data = fetch_weather(lat, lon)
 
-    # Elevation comes from the forecast API response
-    elevation = current[:elevation]
+    current = extract_current(data)
+    daily = data["daily"] || {}
 
-    {
-      avg_temp: temp_data[:avg].round(1),
-      total_rain_7d: rain_data[:total_7d].round(1),
-      days_since_rain: rain_data[:days_since],
-      current_month: Time.now.month,
-      elevation: elevation,
-      raw: {
-        current_temp: current[:temp],
-        description: current[:description],
-        humidity: current[:humidity],
-        rain_daily: rain_data[:daily].last(7)
-      }
-    }
+    # Cache the raw API response for reuse
+    self.class.store_cache(lat, lon, { current: current, daily: daily })
+
+    build_result(current, daily, temp_window)
   rescue => e
     raise WeatherError, "Failed to fetch weather: #{e.message}"
   end
 
   private
 
-  def fetch_json(url)
+  def fetch_weather(lat, lon)
+    url = "#{OPEN_METEO_URL}?latitude=#{lat}&longitude=#{lon}" \
+          "&current=temperature_2m,relative_humidity_2m,weather_code" \
+          "&daily=rain_sum,temperature_2m_mean" \
+          "&past_days=10" \
+          "&forecast_days=1" \
+          "&timezone=auto"
+
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.open_timeout = 10
-    http.read_timeout = 10
+    http.open_timeout = 5
+    http.read_timeout = 5
 
     request = Net::HTTP::Get.new(uri.request_uri)
-    Rails.logger.info("Fetching: #{url}") if defined?(Rails)
+    Rails.logger.info("WeatherService: #{url}") if defined?(Rails)
     response = http.request(request)
 
     unless response.is_a?(Net::HTTPSuccess)
@@ -65,15 +102,8 @@ class WeatherService
     JSON.parse(response.body)
   end
 
-  # Current weather from Open-Meteo forecast API
-  def fetch_current(lat, lon)
-    url = "#{OPEN_METEO_FORECAST_URL}?latitude=#{lat}&longitude=#{lon}" \
-          "&current=temperature_2m,relative_humidity_2m,weather_code" \
-          "&timezone=auto"
-
-    data = fetch_json(url)
+  def extract_current(data)
     current = data["current"] || {}
-
     {
       temp: current["temperature_2m"],
       humidity: current["relative_humidity_2m"],
@@ -82,32 +112,39 @@ class WeatherService
     }
   end
 
-  # Last 10 days of daily rain and temperature from Open-Meteo archive.
-  # We fetch 10 days so species with temp_window=7 get a full 7-day average,
-  # and we have 3 extra for days_since_rain look-back. Rain chart shows last 7.
-  def fetch_history(lat, lon)
-    end_date = Date.today - 1  # archive doesn't include today
-    start_date = end_date - 9  # 10 days total
+  def build_result(current, daily, temp_window)
+    temp_data = extract_temp(daily, current, temp_window)
+    rain_data = extract_rain(daily)
 
-    url = "#{OPEN_METEO_ARCHIVE_URL}?latitude=#{lat}&longitude=#{lon}" \
-          "&start_date=#{start_date}&end_date=#{end_date}" \
-          "&daily=rain_sum,temperature_2m_mean" \
-          "&timezone=auto"
-
-    fetch_json(url)
+    {
+      avg_temp: temp_data[:avg].round(1),
+      total_rain_7d: rain_data[:total_7d].round(1),
+      days_since_rain: rain_data[:days_since],
+      current_month: Time.now.month,
+      elevation: current[:elevation],
+      raw: {
+        current_temp: current[:temp],
+        description: current[:description],
+        humidity: current[:humidity],
+        rain_daily: rain_data[:daily].last(7)
+      }
+    }
   end
 
-  def extract_rain_from_history(history)
-    dates = history.dig("daily", "time") || []
-    rains = history.dig("daily", "rain_sum") || []
+  def extract_rain(daily)
+    dates = daily["time"] || []
+    rains = daily["rain_sum"] || []
 
-    daily = dates.zip(rains).map { |d, r| { date: d, rain_mm: r || 0 } }
+    # Exclude today (last entry from forecast_days=1) — it's incomplete
+    all_entries = dates.zip(rains).map { |d, r| { date: d, rain_mm: r || 0 } }
+    past_entries = all_entries[0...-1]  # drop today
+    past_entries = all_entries if past_entries.empty?  # fallback
 
-    last_7 = daily.last(7)
+    last_7 = past_entries.last(7)
     total_7d = last_7.sum { |d| d[:rain_mm] }
 
     days_since = 0
-    daily.reverse.each do |d|
+    past_entries.reverse.each do |d|
       break if d[:rain_mm] >= 1.0
       days_since += 1
     end
@@ -115,19 +152,19 @@ class WeatherService
     {
       total_7d: total_7d,
       days_since: [days_since, 0].max,
-      daily: daily
+      daily: past_entries
     }
   end
 
   # Species-specific temperature averaging.
   # Uses the last N days (temp_window) of daily mean temperatures — no live
   # temp blending. Mycelium doesn't respond to a warm afternoon; it integrates
-  # sustained conditions over days. Live temp added noise and made the readings
-  # too reactive for all three species.
-  # Fallback: current live temp if archive data is missing.
-  def extract_temp_from_history(history, current, temp_window)
-    temps = history.dig("daily", "temperature_2m_mean") || []
-    temps = temps.compact
+  # sustained conditions over days.
+  # Fallback: current live temp if daily data is missing.
+  def extract_temp(daily, current, temp_window)
+    temps = (daily["temperature_2m_mean"] || []).compact
+    # Drop last entry (today — may be incomplete from forecast_days=1)
+    temps = temps[0...-1] if temps.size > 1
 
     if temps.any?
       window = temps.last(temp_window)
