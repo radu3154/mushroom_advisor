@@ -96,6 +96,48 @@ class LandCoverService
     water:      { en: "Water",              ro: "Apă" },
   }.freeze
 
+  # Romanian translations for OSM tags that fall outside the main terrain categories.
+  # These appear in the "other" bucket (residential, industrial, etc.) or
+  # when terrain_result encounters a type not in TERRAIN_LABELS.
+  OTHER_LABELS_RO = {
+    "residential"        => "Zonă rezidențială",
+    "industrial"         => "Zonă industrială",
+    "commercial"         => "Zonă comercială",
+    "retail"             => "Zonă comercială",
+    "construction"       => "Șantier",
+    "quarry"             => "Carieră",
+    "landfill"           => "Groapă de gunoi",
+    "military"           => "Zonă militară",
+    "railway"            => "Cale ferată",
+    "cemetery"           => "Cimitir",
+    "sand"               => "Nisip",
+    "bare_rock"          => "Stâncă",
+    "scree"              => "Grohotiș",
+    "mud"                => "Noroi",
+    "beach"              => "Plajă",
+    "cliff"              => "Faleza",
+    "glacier"            => "Ghețar",
+    "brownfield"         => "Teren viran",
+    "greenfield"         => "Teren liber",
+    "garages"            => "Garaje",
+    "playground"         => "Loc de joacă",
+    "sports_centre"      => "Complex sportiv",
+    "pitch"              => "Teren de sport",
+    "stadium"            => "Stadion",
+    "swimming_pool"      => "Piscină",
+    "golf_course"        => "Teren de golf",
+    "marina"             => "Port turistic",
+    "village_green"      => "Pajiște",
+    "recreation_ground"  => "Teren de agrement",
+    "reservoir"          => "Rezervor de apă",
+    "basin"              => "Bazin",
+    "plant_nursery"      => "Pepinieră",
+    "flowerbed"          => "Strat de flori",
+    "religious"          => "Loc de cult",
+    "education"          => "Instituție de învățământ",
+    "depot"              => "Depozit",
+  }.freeze
+
   # ── Public API ───────────────────────────────────────────────────────
 
   def self.detect(lat:, lon:, elevation: nil)
@@ -160,41 +202,46 @@ class LandCoverService
     cached = cached_terrain(lat, lon)
     return cached if cached
 
-    overpass_result = nil
+    is_in_result = nil
     nominatim_result = nil
 
-    t_overpass  = Thread.new { overpass_result  = query_overpass_terrain(lat, lon) }
+    # Step 1: Run is_in() and Nominatim in parallel
+    t_is_in     = Thread.new { is_in_result    = query_overpass_is_in(lat, lon) }
     t_nominatim = Thread.new { nominatim_result = query_nominatim(lat, lon) }
 
-    t_overpass.join
+    t_is_in.join
     t_nominatim.join
 
-    # Prefer Overpass (accurate polygon match) over Nominatim (nearest address).
-    # forest_no_leaf_type has type "unknown" but IS a real detection — treat it
-    # as a valid result so Nominatim can't override it with a nearby road/meadow.
-    result = if overpass_result && (overpass_result[:type] != "unknown" || overpass_result[:meta] == :forest_no_leaf_type)
-               overpass_result
-             elsif nominatim_result && (nominatim_result[:type] != "unknown" || nominatim_result[:meta] == :forest_no_leaf_type)
+    # If is_in() found something definitive, use it immediately
+    if is_in_result && (is_in_result[:type] != "unknown" || is_in_result[:meta] == :forest_no_leaf_type)
+      store_cache(lat, lon, is_in_result)
+      return is_in_result
+    end
+
+    # Step 2: is_in() returned unknown — try nearby features fallback.
+    # Nominatim already finished (ran in parallel), so this adds minimal time.
+    nearby_result = query_overpass_nearby(lat, lon)
+    if nearby_result && (nearby_result[:type] != "unknown" || nearby_result[:meta] == :forest_no_leaf_type)
+      nearby_result[:source] = nearby_result[:source]&.sub("osm", "osm_nearby") || "osm_nearby"
+      store_cache(lat, lon, nearby_result)
+      return nearby_result
+    end
+
+    # Step 3: Fall back to Nominatim or unknown
+    result = if nominatim_result && (nominatim_result[:type] != "unknown" || nominatim_result[:meta] == :forest_no_leaf_type)
                nominatim_result
              else
-               overpass_result || nominatim_result || unknown_result("none")
+               is_in_result || nearby_result || nominatim_result || unknown_result("none")
              end
 
     store_cache(lat, lon, result)
     result
   end
 
-  # ── Overpass: terrain check (PRIMARY + NEARBY FALLBACK) ───────────────
-  # Step 1: is_in() — fast spatial index lookup (~200-500ms).
-  # Step 2: If is_in() returns empty, try around:150 — searches for nearby
-  #         landuse/natural features within 150m (~300-800ms). Many rural
-  #         areas in Romania lack polygon coverage but have features nearby.
-  # The old slow query used around:5000+ which scanned huge areas (3-10s).
-  # around:150 is small enough to be fast but catches unmapped gaps.
-  def self.query_overpass_terrain(lat, lon)
-    # Step 1: Fast point-in-polygon check
-    is_in_query = <<~OQL
-      [out:json][timeout:4];
+  # ── Overpass: is_in() — fast point-in-polygon check (~200-500ms) ──────
+  def self.query_overpass_is_in(lat, lon)
+    query = <<~OQL
+      [out:json][timeout:3];
       is_in(#{lat},#{lon})->.a;
       (
         area.a["landuse"];
@@ -204,14 +251,16 @@ class LandCoverService
       );
       out tags;
     OQL
+    run_overpass_query(query)
+  end
 
-    result = run_overpass_query(is_in_query)
-    return result if result && (result[:type] != "unknown" || result[:meta] == :forest_no_leaf_type)
-
-    # Step 2: Nearby features fallback — only runs when is_in() found nothing.
-    # Searches ways and relations within 150m for landuse/natural tags.
-    nearby_query = <<~OQL
-      [out:json][timeout:4];
+  # ── Overpass: nearby features fallback (~300-800ms) ──────────────────
+  # Only called when is_in() returned unknown. Searches ways and relations
+  # within 150m for landuse/natural tags. Catches unmapped polygon gaps
+  # common in rural Romania.
+  def self.query_overpass_nearby(lat, lon)
+    query = <<~OQL
+      [out:json][timeout:3];
       (
         way["landuse"](around:150,#{lat},#{lon});
         way["natural"](around:150,#{lat},#{lon});
@@ -221,18 +270,9 @@ class LandCoverService
         relation["natural"](around:150,#{lat},#{lon});
         relation["water"](around:150,#{lat},#{lon});
       );
-      out tags 5;
+      out tags 3;
     OQL
-
-    nearby_result = run_overpass_query(nearby_query)
-    if nearby_result && (nearby_result[:type] != "unknown" || nearby_result[:meta] == :forest_no_leaf_type)
-      # Tag source as "osm_nearby" so we know it came from the fallback
-      nearby_result[:source] = nearby_result[:source]&.sub("osm", "osm_nearby") || "osm_nearby"
-      return nearby_result
-    end
-
-    # Both Overpass strategies failed — return whatever we got (or nil)
-    result || nearby_result
+    run_overpass_query(query)
   end
 
   # Run an Overpass query against available servers, parse elements.
@@ -242,8 +282,8 @@ class LandCoverService
         uri = URI.parse(base_url)
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
-        http.open_timeout = 3
-        http.read_timeout = 5
+        http.open_timeout = 2
+        http.read_timeout = 3
 
         request = Net::HTTP::Post.new(uri.request_uri)
         request.set_form_data("data" => query)
@@ -336,8 +376,9 @@ class LandCoverService
     if categories[:other].any?
       first = categories[:other].first["tags"] || {}
       tag = first["landuse"] || first["natural"] || first["leisure"] || "detected"
-      return { type: "other", label_en: tag.tr("_", " ").capitalize,
-               label_ro: tag.tr("_", " ").capitalize, source: "osm" }
+      label_en = tag.tr("_", " ").capitalize
+      label_ro = OTHER_LABELS_RO[tag] || label_en
+      return { type: "other", label_en: label_en, label_ro: label_ro, source: "osm" }
     end
 
     unknown_result("none")
@@ -405,7 +446,9 @@ class LandCoverService
     if labels
       { type: type, label_en: labels[:en], label_ro: labels[:ro], source: source }
     else
-      { type: type, label_en: type.tr("_", " ").capitalize, label_ro: type.tr("_", " ").capitalize, source: source }
+      label_en = type.tr("_", " ").capitalize
+      label_ro = OTHER_LABELS_RO[type] || label_en
+      { type: type, label_en: label_en, label_ro: label_ro, source: source }
     end
   end
 

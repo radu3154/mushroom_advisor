@@ -88,8 +88,8 @@ class WeatherService
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.open_timeout = 5
-    http.read_timeout = 5
+    http.open_timeout = 3
+    http.read_timeout = 3
 
     request = Net::HTTP::Get.new(uri.request_uri)
     Rails.logger.info("WeatherService: #{url}") if defined?(Rails)
