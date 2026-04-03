@@ -169,6 +169,43 @@ class ScoringEngineTest < Minitest::Test
     end
   end
 
+  # ── Urban terrain skip ───────────────────────────────────────────────
+
+  def test_residential_terrain_scores_zero
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    lc = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    result = ScoringEngine.new("morel", w, lang: "en", land_cover: lc).call
+    assert_equal 0, result[:score]
+    assert_equal "skip", result[:tier]
+    assert result[:on_urban]
+  end
+
+  def test_industrial_terrain_scores_zero
+    w = weather(temp: 17, rain: 30, days_since: 7, month: 8)
+    lc = { type: "industrial", label_en: "Industrial", label_ro: "Zonă industrială", source: "osm" }
+    result = ScoringEngine.new("boletus", w, lang: "en", land_cover: lc).call
+    assert_equal 0, result[:score]
+    assert result[:on_urban]
+  end
+
+  def test_urban_skip_romanian_message
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    lc = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    result = ScoringEngine.new("morel", w, lang: "ro", land_cover: lc).call
+    assert_equal "EVITĂ", result[:label]
+    assert_includes result[:explanation], "zonă rezidențială"
+  end
+
+  def test_urban_applies_to_all_species
+    w = weather(temp: 17, rain: 30, days_since: 7, month: 7)
+    lc = { type: "commercial", label_en: "Commercial", label_ro: "Zonă comercială", source: "osm" }
+    Species.keys.each do |key|
+      result = ScoringEngine.new(key, w, lang: "en", land_cover: lc).call
+      assert_equal 0, result[:score], "#{key} on commercial should score 0"
+      assert result[:on_urban], "#{key} should flag on_urban"
+    end
+  end
+
   # ── Edge cases ──────────────────────────────────────────────────────
 
   def test_all_species_can_be_scored

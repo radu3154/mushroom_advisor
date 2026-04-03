@@ -86,14 +86,12 @@ class WeatherService
           "&timezone=auto"
 
     uri = URI.parse(url)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.open_timeout = 3
-    http.read_timeout = 3
-
-    request = Net::HTTP::Get.new(uri.request_uri)
     Rails.logger.info("WeatherService: #{url}") if defined?(Rails)
-    response = http.request(request)
+
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true,
+                               open_timeout: 3, read_timeout: 3) do |http|
+      http.request(Net::HTTP::Get.new(uri.request_uri))
+    end
 
     unless response.is_a?(Net::HTTPSuccess)
       raise WeatherError, "API returned #{response.code}: #{response.body}"

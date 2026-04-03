@@ -1,4 +1,5 @@
 require "date"
+require "set"
 
 class ScoringEngine
   # Scores a species against current weather data.
@@ -21,7 +22,7 @@ class ScoringEngine
       (60..79)  => { tier: "good",      label: "BINE",        message: "Condiții bune — merită o ieșire." },
       (40..59)  => { tier: "fair",      label: "ACCEPTABIL",  message: "S-ar putea să găsești ceva — fără așteptări mari." },
       (20..39)  => { tier: "poor",      label: "SLAB",        message: "Puțin probabil — mai bine aștepți." },
-      (0..19)   => { tier: "skip",      label: "EVITĂ",       message: "Nu e momentul potrivit. Stai la căldură." }
+      (0..19)   => { tier: "skip",      label: "EVITĂ",       message: "Nu e momentul potrivit. Stai liniștit acasă." }
     }
   }.freeze
 
@@ -34,6 +35,18 @@ class ScoringEngine
     "en" => { tier: "skip", label: "SKIP", message: "Mushrooms don't grow underwater. Unless you're looking for fish." },
     "ro" => { tier: "skip", label: "EVITĂ", message: "Ciupercile nu cresc sub apă. Doar dacă pescuiești." }
   }.freeze
+
+  URBAN_LABELS = {
+    "en" => { tier: "skip", label: "SKIP", message: "No mushrooms here — try moving the pin to a forest or meadow." },
+    "ro" => { tier: "skip", label: "EVITĂ", message: "Aici nu cresc ciuperci — mută pinul spre o pădure sau pajiște." }
+  }.freeze
+
+  # Terrain types where mushroom foraging makes no sense.
+  URBAN_TYPES = Set.new(%w[
+    residential industrial commercial retail construction
+    quarry landfill military railway depot garages
+    brownfield religious education
+  ]).freeze
 
   MONTH_NAMES_RO = [nil, "Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
                     "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"].freeze
@@ -65,6 +78,25 @@ class ScoringEngine
         on_water: true,
         best_time: nil,
         explanation: @lang == "ro" ? "Ai plasat pinul pe apă. Mută-l pe uscat!" : "You pinned on water. Move the pin to dry land!",
+        habitat: Species.localized(@species, :habitat, @lang),
+        tips: Species.localized(@species, :tips, @lang)
+      }
+    end
+
+    if URBAN_TYPES.include?(@land_cover[:type])
+      ul = URBAN_LABELS[@lang] || URBAN_LABELS["en"]
+      terrain_label = @lang == "ro" ? @land_cover[:label_ro] : @land_cover[:label_en]
+      return {
+        score: 0,
+        breakdown: { season: 0, temperature: 0, rain: 0, habitat: 0, timing: 0 },
+        tier: ul[:tier],
+        label: ul[:label],
+        message: ul[:message],
+        on_urban: true,
+        best_time: nil,
+        explanation: @lang == "ro" ?
+          "Ai plasat pinul pe #{terrain_label&.downcase || 'zonă urbană'}. Mută-l spre natură!" :
+          "You pinned on #{terrain_label&.downcase || 'urban area'}. Move the pin to nature!",
         habitat: Species.localized(@species, :habitat, @lang),
         tips: Species.localized(@species, :tips, @lang)
       }

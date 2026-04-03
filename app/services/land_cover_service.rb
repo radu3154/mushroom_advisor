@@ -202,98 +202,91 @@ class LandCoverService
     cached = cached_terrain(lat, lon)
     return cached if cached
 
-    is_in_result = nil
+    overpass_result = nil
     nominatim_result = nil
 
-    # Step 1: Run is_in() and Nominatim in parallel
-    t_is_in     = Thread.new { is_in_result    = query_overpass_is_in(lat, lon) }
+    # Overpass and Nominatim run in parallel.
+    # Overpass uses a persistent connection: is_in() + nearby reuse one TCP+SSL
+    # handshake instead of two — saves ~100-200ms on the fallback path.
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    t_overpass  = Thread.new { overpass_result  = query_overpass(lat, lon) }
     t_nominatim = Thread.new { nominatim_result = query_nominatim(lat, lon) }
 
-    t_is_in.join
+    t_overpass.join
     t_nominatim.join
+    elapsed = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0) * 1000).round
+    Rails.logger.info "LandCover [#{lat.round(2)},#{lon.round(2)}]: #{elapsed}ms | " \
+                      "type=#{overpass_result&.dig(:type) || nominatim_result&.dig(:type) || 'nil'} " \
+                      "src=#{overpass_result&.dig(:source) || nominatim_result&.dig(:source) || 'none'}"
 
-    # If is_in() found something definitive, use it immediately
-    if is_in_result && (is_in_result[:type] != "unknown" || is_in_result[:meta] == :forest_no_leaf_type)
-      store_cache(lat, lon, is_in_result)
-      return is_in_result
-    end
-
-    # Step 2: is_in() returned unknown — try nearby features fallback.
-    # Nominatim already finished (ran in parallel), so this adds minimal time.
-    nearby_result = query_overpass_nearby(lat, lon)
-    if nearby_result && (nearby_result[:type] != "unknown" || nearby_result[:meta] == :forest_no_leaf_type)
-      nearby_result[:source] = nearby_result[:source]&.sub("osm", "osm_nearby") || "osm_nearby"
-      store_cache(lat, lon, nearby_result)
-      return nearby_result
-    end
-
-    # Step 3: Fall back to Nominatim or unknown
-    result = if nominatim_result && (nominatim_result[:type] != "unknown" || nominatim_result[:meta] == :forest_no_leaf_type)
+    # Prefer Overpass (accurate polygon match) over Nominatim (nearest address).
+    result = if overpass_result && (overpass_result[:type] != "unknown" || overpass_result[:meta] == :forest_no_leaf_type)
+               overpass_result
+             elsif nominatim_result && (nominatim_result[:type] != "unknown" || nominatim_result[:meta] == :forest_no_leaf_type)
                nominatim_result
              else
-               is_in_result || nearby_result || nominatim_result || unknown_result("none")
+               overpass_result || nominatim_result || unknown_result("none")
              end
 
     store_cache(lat, lon, result)
     result
   end
 
-  # ── Overpass: is_in() — fast point-in-polygon check (~200-500ms) ──────
-  def self.query_overpass_is_in(lat, lon)
-    query = <<~OQL
-      [out:json][timeout:3];
-      is_in(#{lat},#{lon})->.a;
-      (
-        area.a["landuse"];
-        area.a["natural"];
-        area.a["leisure"];
-        area.a["water"];
-      );
-      out tags;
-    OQL
-    run_overpass_query(query)
-  end
+  # ── Overpass: persistent-connection is_in + nearby ──────────────────
+  # Uses Net::HTTP.start to keep one TCP+SSL connection open for both
+  # queries. The nearby fallback reuses the same socket — no second
+  # handshake, saving ~100-200ms when is_in() returns unknown.
+  IS_IN_OQL = proc { |lat, lon| <<~OQL }
+    [out:json][timeout:3];
+    is_in(#{lat},#{lon})->.a;
+    (
+      area.a["landuse"];
+      area.a["natural"];
+      area.a["leisure"];
+      area.a["water"];
+    );
+    out tags;
+  OQL
 
-  # ── Overpass: nearby features fallback (~300-800ms) ──────────────────
-  # Only called when is_in() returned unknown. Searches ways and relations
-  # within 150m for landuse/natural tags. Catches unmapped polygon gaps
-  # common in rural Romania.
-  def self.query_overpass_nearby(lat, lon)
-    query = <<~OQL
-      [out:json][timeout:3];
-      (
-        way["landuse"](around:150,#{lat},#{lon});
-        way["natural"](around:150,#{lat},#{lon});
-        way["leisure"](around:150,#{lat},#{lon});
-        way["water"](around:150,#{lat},#{lon});
-        relation["landuse"](around:150,#{lat},#{lon});
-        relation["natural"](around:150,#{lat},#{lon});
-        relation["water"](around:150,#{lat},#{lon});
-      );
-      out tags 3;
-    OQL
-    run_overpass_query(query)
-  end
+  NEARBY_OQL = proc { |lat, lon| <<~OQL }
+    [out:json][timeout:3];
+    (
+      way["landuse"](around:150,#{lat},#{lon});
+      way["natural"](around:150,#{lat},#{lon});
+      way["leisure"](around:150,#{lat},#{lon});
+      way["water"](around:150,#{lat},#{lon});
+      relation["landuse"](around:150,#{lat},#{lon});
+      relation["natural"](around:150,#{lat},#{lon});
+      relation["water"](around:150,#{lat},#{lon});
+    );
+    out tags 3;
+  OQL
 
-  # Run an Overpass query against available servers, parse elements.
-  def self.run_overpass_query(query)
+  def self.query_overpass(lat, lon)
     OVERPASS_URLS.each do |base_url|
       begin
         uri = URI.parse(base_url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        http.open_timeout = 2
-        http.read_timeout = 3
 
-        request = Net::HTTP::Post.new(uri.request_uri)
-        request.set_form_data("data" => query)
+        # Persistent connection — one TCP+SSL handshake for both queries.
+        Net::HTTP.start(uri.host, uri.port, use_ssl: true,
+                        open_timeout: 2, read_timeout: 3) do |http|
 
-        response = http.request(request)
-        next unless response.is_a?(Net::HTTPSuccess)
+          # Step 1: is_in() — fast point-in-polygon (~200-500ms)
+          result = run_overpass_on(http, uri, IS_IN_OQL.call(lat, lon))
+          if result && (result[:type] != "unknown" || result[:meta] == :forest_no_leaf_type)
+            return result
+          end
 
-        data = JSON.parse(response.body)
-        elements = data["elements"] || []
-        return parse_overpass_elements(elements)
+          # Step 2: nearby fallback — reuses the open connection (~200-500ms)
+          nearby = run_overpass_on(http, uri, NEARBY_OQL.call(lat, lon))
+          if nearby && (nearby[:type] != "unknown" || nearby[:meta] == :forest_no_leaf_type)
+            nearby[:source] = nearby[:source]&.sub("osm", "osm_nearby") || "osm_nearby"
+            return nearby
+          end
+
+          # Both returned unknown — return whatever we got
+          return result || nearby
+        end
       rescue Net::OpenTimeout, Net::ReadTimeout, StandardError => e
         Rails.logger.warn "Overpass #{base_url} failed: #{e.message}"
         next
@@ -301,6 +294,20 @@ class LandCoverService
     end
 
     nil  # All servers failed
+  end
+
+  # Execute a single Overpass query on an already-open HTTP connection.
+  def self.run_overpass_on(http, uri, oql)
+    request = Net::HTTP::Post.new(uri.request_uri)
+    request.set_form_data("data" => oql)
+    response = http.request(request)
+    return nil unless response.is_a?(Net::HTTPSuccess)
+
+    data = JSON.parse(response.body)
+    parse_overpass_elements(data["elements"] || [])
+  rescue StandardError => e
+    Rails.logger.warn "Overpass query failed: #{e.message}"
+    nil
   end
 
   # Parse Overpass is_in() elements with priority ordering.

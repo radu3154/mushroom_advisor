@@ -403,6 +403,23 @@ class LandCoverServiceTest < Minitest::Test
     result = LandCoverService.send(:parse_overpass_elements, elements)
     assert_equal "other", result[:type]
     assert_equal "Residential", result[:label_en]
+    assert_equal "Zonă rezidențială", result[:label_ro]
+  end
+
+  def test_overpass_sand_translated_to_romanian
+    elements = [osm("natural" => "sand")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "other", result[:type]
+    assert_equal "Sand", result[:label_en]
+    assert_equal "Nisip", result[:label_ro]
+  end
+
+  def test_overpass_quarry_translated_to_romanian
+    elements = [osm("landuse" => "quarry")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "other", result[:type]
+    assert_equal "Quarry", result[:label_en]
+    assert_equal "Carieră", result[:label_ro]
   end
 
   def test_overpass_residential_ignored_when_real_terrain_present
