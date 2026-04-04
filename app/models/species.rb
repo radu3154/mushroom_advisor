@@ -516,21 +516,17 @@ class Species
               <stop offset="50%" stop-color="#6a7888"/>
               <stop offset="100%" stop-color="#505e6e"/>
             </linearGradient>
-            <linearGradient id="oyster-gill" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#f0e8d8"/>
-              <stop offset="100%" stop-color="#d8ccb8"/>
-            </linearGradient>
-            <linearGradient id="oyster-bark" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#5a4830"/>
-              <stop offset="30%" stop-color="#6b5a40"/>
-              <stop offset="70%" stop-color="#5a4830"/>
-              <stop offset="100%" stop-color="#4a3820"/>
-            </linearGradient>
             <linearGradient id="oyster-bark-v" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#6b5a40"/>
               <stop offset="50%" stop-color="#5a4830"/>
               <stop offset="100%" stop-color="#4a3820"/>
             </linearGradient>
+            <!-- Inner heartwood exposed at break -->
+            <radialGradient id="oyster-heartwood" cx="0.45" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="#8a7858"/>
+              <stop offset="60%" stop-color="#6b5a40"/>
+              <stop offset="100%" stop-color="#5a4830"/>
+            </radialGradient>
             <filter id="oyster-shadow" x="-10%" y="-10%" width="130%" height="130%">
               <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
               <feOffset dx="2" dy="4"/>
@@ -543,28 +539,67 @@ class Species
           <ellipse cx="200" cy="285" rx="220" ry="25" fill="#4a4030" opacity="0.25"/>
           <!-- Standing dead tree trunk -->
           <g>
-            <!-- Trunk body (vertical, slightly tapered) -->
-            <path d="M150 280 L145 60 Q148 30 170 20 Q190 12 210 20 Q232 30 235 60 L230 280 Z" fill="url(#oyster-bark-v)"/>
-            <!-- Bark texture (vertical cracks) -->
-            <path d="M165 40 Q163 120 166 200 Q167 240 165 275" stroke="#4a3820" stroke-width="1.5" fill="none" opacity="0.3"/>
-            <path d="M185 25 Q183 100 186 180 Q187 230 185 275" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.25"/>
-            <path d="M205 25 Q207 110 204 195 Q203 240 205 275" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.25"/>
-            <path d="M220 40 Q218 120 221 210 Q222 250 220 275" stroke="#4a3820" stroke-width="1.5" fill="none" opacity="0.3"/>
-            <!-- Bark highlights -->
-            <path d="M175 50 Q173 100 176 160" stroke="#7a6a50" stroke-width="2" fill="none" opacity="0.15"/>
-            <path d="M195 30 Q193 90 196 150" stroke="#7a6a50" stroke-width="1.5" fill="none" opacity="0.12"/>
-            <!-- Broken top -->
-            <path d="M145 60 Q155 45 170 20 Q180 14 190 16" fill="#5a4830" opacity="0.3"/>
-            <!-- Small branch stub -->
-            <path d="M230 90 Q245 85 255 80" stroke="#5a4830" stroke-width="6" stroke-linecap="round" fill="none"/>
-            <path d="M230 90 Q245 85 255 80" stroke="#6b5a40" stroke-width="3" stroke-linecap="round" fill="none"/>
-            <!-- Moss patches on trunk -->
-            <ellipse cx="155" cy="220" rx="8" ry="15" fill="#5a8a3a" opacity="0.25"/>
-            <ellipse cx="160" cy="260" rx="10" ry="12" fill="#6a9a4a" opacity="0.2"/>
+            <!-- Trunk body — wide, slightly irregular, slight lean -->
+            <path d="M148 280 Q144 180 146 100 L146 48 L148 42 L234 42 L236 48 L234 100 Q236 180 232 280 Z" fill="url(#oyster-bark-v)"/>
+            <!-- Bark texture — deep vertical cracks (dead tree, drying/splitting) -->
+            <path d="M162 48 Q160 130 163 210 Q164 250 162 278" stroke="#3e2e18" stroke-width="1.8" fill="none" opacity="0.35"/>
+            <path d="M178 44 Q176 110 179 190 Q180 240 178 278" stroke="#3e2e18" stroke-width="1.3" fill="none" opacity="0.28"/>
+            <path d="M195 44 Q197 120 194 205 Q193 245 195 278" stroke="#3e2e18" stroke-width="1.3" fill="none" opacity="0.28"/>
+            <path d="M212 44 Q210 115 213 200 Q214 248 212 278" stroke="#3e2e18" stroke-width="1.5" fill="none" opacity="0.32"/>
+            <path d="M226 48 Q224 130 227 215 Q228 252 226 278" stroke="#3e2e18" stroke-width="1.2" fill="none" opacity="0.25"/>
+            <!-- Horizontal bark plates (peeling on dead tree) -->
+            <path d="M148 80 Q170 78 195 79 Q218 80 234 82" stroke="#3e2e18" stroke-width="0.7" fill="none" opacity="0.2"/>
+            <path d="M148 135 Q175 133 200 134 Q225 135 234 137" stroke="#3e2e18" stroke-width="0.7" fill="none" opacity="0.18"/>
+            <path d="M148 195 Q172 193 198 194 Q222 195 234 196" stroke="#3e2e18" stroke-width="0.7" fill="none" opacity="0.18"/>
+            <path d="M148 248 Q178 246 205 247 Q228 248 234 249" stroke="#3e2e18" stroke-width="0.6" fill="none" opacity="0.15"/>
+            <!-- Bark highlight (left light source) -->
+            <path d="M155 60 Q153 130 156 200 Q157 240 155 270" stroke="#7a6a50" stroke-width="3" fill="none" opacity="0.12"/>
+            <!-- Dark right edge -->
+            <path d="M228 55 Q226 130 229 210 Q230 250 228 275" stroke="#3a2a15" stroke-width="2" fill="none" opacity="0.15"/>
+
+            <!-- ── Broken top: oval cross-section with jagged edge ── -->
+            <!-- Oval heartwood face (the sawn/broken cross-section) -->
+            <ellipse cx="190" cy="42" rx="44" ry="10" fill="url(#oyster-heartwood)"/>
+            <!-- Growth rings on the cross-section -->
+            <ellipse cx="190" cy="42" rx="30" ry="7" fill="none" stroke="#5a4830" stroke-width="0.6" opacity="0.3"/>
+            <ellipse cx="190" cy="42" rx="18" ry="4" fill="none" stroke="#5a4830" stroke-width="0.5" opacity="0.25"/>
+            <ellipse cx="190" cy="42" rx="6" ry="2" fill="#4a3820" opacity="0.3"/>
+            <!-- Jagged splinter sticking up (left side of break) -->
+            <path d="M152 42 L148 18 L155 30 L158 42" fill="#5a4830"/>
+            <path d="M150 20 L152 38" stroke="#6b5a40" stroke-width="0.8" fill="none" opacity="0.3"/>
+            <!-- Smaller splinter (right-center) -->
+            <path d="M206 41 L210 26 L214 41" fill="#5a4830"/>
+            <path d="M209 28 L211 40" stroke="#6b5a40" stroke-width="0.6" fill="none" opacity="0.3"/>
+            <!-- Tiny splinter (far right) -->
+            <path d="M228 42 L232 34 L234 42" fill="#5a4830" opacity="0.8"/>
+
+            <!-- ── Branch stubs ── -->
+            <!-- Left branch stub (broken short, angled up-left, ~y=70) -->
+            <path d="M148 72 Q130 62 118 50" stroke="#5a4830" stroke-width="9" stroke-linecap="round" fill="none"/>
+            <path d="M148 72 Q130 62 118 50" stroke="#6b5a40" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <!-- Tiny broken tip on left stub -->
+            <path d="M118 50 L114 42 L120 46" fill="#5a4830" opacity="0.5"/>
+
+            <!-- Right branch stub (shorter, angled up-right, ~y=84 — above mushrooms) -->
+            <path d="M234 86 Q252 78 264 68" stroke="#5a4830" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <path d="M234 86 Q252 78 264 68" stroke="#6b5a40" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+            <!-- Lower left twig stub (small, ~y=180) -->
+            <path d="M148 182 Q136 176 128 168" stroke="#5a4830" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M148 182 Q136 176 128 168" stroke="#6b5a40" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+            <!-- Moss patches on trunk (north-facing left side) -->
+            <ellipse cx="153" cy="225" rx="7" ry="18" fill="#5a8a3a" opacity="0.25"/>
+            <ellipse cx="157" cy="260" rx="9" ry="12" fill="#6a9a4a" opacity="0.2"/>
+            <ellipse cx="150" cy="155" rx="5" ry="10" fill="#4a7a2a" opacity="0.18"/>
+            <!-- Lichen spot -->
+            <circle cx="218" cy="245" r="6" fill="#8a9a6a" opacity="0.15"/>
+            <circle cx="165" cy="108" r="4" fill="#8a9a6a" opacity="0.12"/>
           </g>
-          <!-- Oyster mushroom cluster (growing from RIGHT side of trunk as shelves) -->
+
+          <!-- Oyster mushroom cluster (shelves from RIGHT side of trunk) -->
           <g filter="url(#oyster-shadow)">
-            <!-- Upper large cap — shelf protruding right from trunk ~y=100 -->
+            <!-- Upper large cap — shelf protruding right ~y=100 -->
             <path d="M228 90 Q260 80 295 85 Q320 92 325 108 Q328 125 310 135 Q290 142 260 140 Q238 136 230 125 Z" fill="url(#oyster-cap1)"/>
             <path d="M235 95 Q258 88 285 90 Q270 95 255 105 Q242 112 235 118 Z" fill="#b0bcc8" opacity="0.3"/>
             <!-- Gill lines underneath -->
@@ -580,7 +615,7 @@ class Species
             <path d="M250 189 Q278 194 302 190" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.4"/>
             <path d="M255 192 Q280 196 298 193" stroke="#d8ccb8" stroke-width="0.6" fill="none" opacity="0.35"/>
 
-            <!-- Lower medium cap — shelf at ~y=200 -->
+            <!-- Lower medium cap — shelf at ~y=210 -->
             <path d="M228 205 Q255 195 285 200 Q308 208 310 222 Q310 235 295 240 Q272 245 250 242 Q234 238 230 225 Z" fill="url(#oyster-cap3)"/>
             <path d="M236 210 Q258 202 278 205 Q265 212 254 220 Q243 226 238 225 Z" fill="#98a4b0" opacity="0.3"/>
             <!-- Gill lines -->
@@ -600,8 +635,8 @@ class Species
           <path d="M340 278 Q338 268 342 260" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
           <path d="M345 278 Q347 269 344 261" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.25"/>
           <!-- Fern at base of trunk -->
-          <path d="M135 275 Q128 258 120 248" stroke="#5a8a3a" stroke-width="1.5" fill="none" opacity="0.35"/>
-          <path d="M138 275 Q132 260 128 252" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
+          <path d="M132 275 Q125 258 117 248" stroke="#5a8a3a" stroke-width="1.5" fill="none" opacity="0.35"/>
+          <path d="M136 275 Q130 260 126 252" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
           <path d="M142 275 Q148 260 155 250" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
         </svg>
       SVG
