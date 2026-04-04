@@ -726,16 +726,16 @@ class ScoringEngineTest < Minitest::Test
   end
 
   def test_negative_temp_oyster_scores
-    # Oyster abs_min = -2, so -1 should score marginal (> 0)
-    w = weather(temp: -1, rain: 15, days_since: 3, month: 12)
+    # Oyster abs_min = -5, so -3 should score marginal (> 0)
+    w = weather(temp: -3, rain: 15, days_since: 3, month: 12)
     result = ScoringEngine.new("oyster", w, lang: "en").call
     assert result[:breakdown][:temperature] > 0,
-      "Oyster at -1°C should score marginal temp, got #{result[:breakdown][:temperature]}"
+      "Oyster at -3°C should score marginal temp, got #{result[:breakdown][:temperature]}"
   end
 
   def test_negative_temp_at_abs_min_scores_one
-    # Oyster abs_min = -2
-    w = weather(temp: -2, rain: 15, days_since: 3, month: 12)
+    # Oyster abs_min = -5
+    w = weather(temp: -5, rain: 15, days_since: 3, month: 12)
     result = ScoringEngine.new("oyster", w, lang: "en").call
     assert_equal 1, result[:breakdown][:temperature],
       "Temp exactly at abs_min should score 1, got #{result[:breakdown][:temperature]}"
