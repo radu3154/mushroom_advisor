@@ -443,9 +443,15 @@ class ScoringEngineTest < Minitest::Test
   end
 
   def test_oyster_too_warm_kills_score
-    w = weather(temp: 25, rain: 20, days_since: 3, month: 10)
+    w = weather(temp: 30, rain: 20, days_since: 3, month: 10)
     result = ScoringEngine.new("oyster", w, lang: "en").call
-    assert_equal 0, result[:score], "Oyster at 25°C (above abs_max 20) should score 0"
+    assert_equal 0, result[:score], "Oyster at 30°C (above abs_max 26) should score 0"
+  end
+
+  def test_oyster_warm_autumn_still_scores
+    w = weather(temp: 18, rain: 20, days_since: 3, month: 9)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] >= 60, "Oyster at 18°C in Sept should score well, got #{result[:score]}"
   end
 
   def test_oyster_terrain_deciduous_ideal
@@ -531,5 +537,234 @@ class ScoringEngineTest < Minitest::Test
     result = ScoringEngine.new("oyster", w, lang: "ro").call
     parts = result[:explanation].split(" · ")
     assert_equal 4, parts.size, "Oyster RO explanation should have 4 parts"
+  end
+
+  def test_oyster_terrain_scrubland_partial
+    assert_equal :partial, ScoringEngine.terrain_match("oyster", "scrubland"),
+      "Oyster should accept scrubland as partial terrain"
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Bimodal season window text (oyster gap: June–August)
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_oyster_season_window_june_shows_september
+    w = weather(temp: 25, rain: 30, days_since: 3, month: 6)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_includes result[:best_time], "September",
+      "Oyster out-of-season in June should point to September, got #{result[:best_time]}"
+    refute_includes result[:best_time], "March",
+      "Should NOT mention March when September is closer"
+  end
+
+  def test_oyster_season_window_august_shows_september
+    w = weather(temp: 25, rain: 30, days_since: 3, month: 8)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_includes result[:best_time], "September"
+    assert_includes result[:best_time], "December"
+  end
+
+  def test_oyster_season_window_january_shows_march
+    w = weather(temp: -5, rain: 10, days_since: 3, month: 1)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_includes result[:best_time], "March",
+      "Oyster in January should point to March window, got #{result[:best_time]}"
+  end
+
+  def test_oyster_season_window_february_ro
+    w = weather(temp: -5, rain: 10, days_since: 3, month: 2)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    assert_includes result[:best_time], "Martie",
+      "Romanian window should say Martie, got #{result[:best_time]}"
+  end
+
+  def test_morel_season_window_contiguous
+    w = weather(temp: 0, rain: 20, days_since: 3, month: 12)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_includes result[:best_time], "March"
+    assert_includes result[:best_time], "May"
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Data integrity: all species consistent
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_all_species_tips_match_counts
+    Species.keys.each do |key|
+      s = Species.find(key)
+      assert_equal s[:tips].size, s[:tips_ro].size,
+        "#{key}: tips (#{s[:tips].size}) and tips_ro (#{s[:tips_ro].size}) count mismatch"
+    end
+  end
+
+  def test_all_species_terrain_covers_all_types
+    expected = %w[deciduous coniferous mixed grassland wetland orchard scrubland farmland park water].sort
+    Species.keys.each do |key|
+      s = Species.find(key)
+      prefs = s[:preferred_terrain]
+      all = (prefs[:ideal] + prefs[:partial] + prefs[:bad]).sort
+      assert_equal expected, all,
+        "#{key}: terrain types missing or extra: expected #{expected}, got #{all}"
+    end
+  end
+
+  def test_all_species_no_duplicate_terrain_types
+    Species.keys.each do |key|
+      s = Species.find(key)
+      prefs = s[:preferred_terrain]
+      all = prefs[:ideal] + prefs[:partial] + prefs[:bad]
+      assert_equal all.size, all.uniq.size,
+        "#{key}: duplicate terrain types found: #{all.select { |t| all.count(t) > 1 }.uniq}"
+    end
+  end
+
+  def test_all_species_have_required_keys
+    required = %i[name name_ro latin description description_ro season_months
+                  temp_range rain_range delay_days temp_window preferred_terrain
+                  tips tips_ro color gradient_from gradient_to svg]
+    Species.keys.each do |key|
+      s = Species.find(key)
+      required.each do |k|
+        assert s.key?(k), "#{key}: missing required key :#{k}"
+      end
+    end
+  end
+
+  def test_all_species_season_months_valid
+    Species.keys.each do |key|
+      s = Species.find(key)
+      s[:season_months].each do |m|
+        assert m >= 1 && m <= 12, "#{key}: invalid month #{m}"
+      end
+      assert_equal s[:season_months], s[:season_months].sort, "#{key}: months should be sorted"
+      assert_equal s[:season_months].size, s[:season_months].uniq.size, "#{key}: duplicate months"
+    end
+  end
+
+  def test_all_species_range_consistency
+    Species.keys.each do |key|
+      s = Species.find(key)
+      %i[temp_range rain_range delay_days].each do |range_key|
+        r = s[range_key]
+        assert r[:abs_min] <= r[:ideal_min], "#{key} #{range_key}: abs_min > ideal_min"
+        assert r[:ideal_min] <= r[:ideal_max], "#{key} #{range_key}: ideal_min > ideal_max"
+        assert r[:ideal_max] <= r[:abs_max], "#{key} #{range_key}: ideal_max > abs_max"
+      end
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Scoring edge cases: float temps, negatives, boundaries
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_float_temperature_scoring
+    w = weather(temp: 11.5, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:score] > 0, "Float temp should score normally"
+    assert result[:breakdown][:temperature] > 0
+  end
+
+  def test_negative_temp_oyster_scores
+    # Oyster abs_min = -2, so -1 should score marginal (> 0)
+    w = weather(temp: -1, rain: 15, days_since: 3, month: 12)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:breakdown][:temperature] > 0,
+      "Oyster at -1°C should score marginal temp, got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_negative_temp_at_abs_min_scores_one
+    # Oyster abs_min = -2
+    w = weather(temp: -2, rain: 15, days_since: 3, month: 12)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 1, result[:breakdown][:temperature],
+      "Temp exactly at abs_min should score 1, got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_temp_at_ideal_max_boundary
+    # Morel ideal_max = 15
+    w = weather(temp: 15, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:breakdown][:temperature] >= 24,
+      "Temp at ideal_max should score well (floor), got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_temp_at_abs_max_boundary
+    # Morel abs_max = 22
+    w = weather(temp: 22, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 1, result[:breakdown][:temperature],
+      "Temp at abs_max should score 1, got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_rain_zero_kills_total_when_below_abs_min
+    # Morel rain abs_min = 3. Rain 0 < 3, so out of abs range, total should be 0.
+    w = weather(temp: 12, rain: 0, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 0, result[:score], "Rain below abs_min should kill total score"
+  end
+
+  def test_extreme_rain_kills_total
+    # Morel rain abs_max = 55. Rain 100 > 55.
+    w = weather(temp: 12, rain: 100, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 0, result[:score], "Rain above abs_max should kill total"
+  end
+
+  def test_chanterelle_delay_ideal_equals_abs_min
+    # Chanterelle: delay abs_min=2, ideal_min=2. days_since=1 should score 0 timing
+    s = Species.find("chanterelle")
+    assert_equal s[:delay_days][:abs_min], s[:delay_days][:ideal_min],
+      "Test precondition: chanterelle abs_min should equal ideal_min for timing"
+    w = weather(temp: 20, rain: 35, days_since: 1, month: 7)
+    result = ScoringEngine.new("chanterelle", w, lang: "en").call
+    assert_equal 0, result[:breakdown][:timing],
+      "1 day when abs_min=ideal_min=2 should score 0 timing"
+  end
+
+  def test_best_time_before_sweet_spot
+    # days_since = 0, morel ideal_min = 3, ideal_max = 5
+    w = weather(temp: 12, rain: 20, days_since: 0, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    if result[:best_time]
+      assert_includes result[:best_time], "3",
+        "Should say 'in 3-5 days' when days_since=0"
+    end
+  end
+
+  def test_best_time_past_sweet_spot
+    w = weather(temp: 12, rain: 20, days_since: 12, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    if result[:best_time]
+      assert_includes result[:best_time], "wait",
+        "Past sweet spot should say wait for rain"
+    end
+  end
+
+  def test_explanation_too_cold_text
+    w = weather(temp: 2, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_includes result[:explanation].downcase, "cold",
+      "Below-ideal temp explanation should mention cold"
+  end
+
+  def test_explanation_too_warm_text
+    w = weather(temp: 20, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_includes result[:explanation].downcase, "warm",
+      "Above-ideal temp explanation should mention warm"
+  end
+
+  def test_explanation_too_dry_text
+    w = weather(temp: 12, rain: 5, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_includes result[:explanation].downcase, "dry",
+      "Below-ideal rain explanation should mention dry"
+  end
+
+  def test_lang_fallback_to_english
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "fr").call
+    assert result[:label].is_a?(String), "Unknown lang should fall back to English"
+    assert result[:score] >= 0
   end
 end

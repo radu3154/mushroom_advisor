@@ -262,6 +262,13 @@ class LandCoverService
     result
   end
 
+  # Types that represent real natural terrain (not urban/built environment).
+  # Used to decide whether is_in() results are trustworthy enough to skip
+  # the nearby fallback. Urban types (residential, industrial, etc.) from
+  # is_in() should NOT short-circuit — the nearby fallback may find actual
+  # forest/meadow features that override the urban polygon.
+  NATURE_TYPES = Set.new(TERRAIN_LABELS.keys.map(&:to_s)).freeze
+
   # ── Overpass: persistent-connection is_in + nearby ──────────────────
   # Uses Net::HTTP.start to keep one TCP+SSL connection open for both
   # queries. The nearby fallback reuses the same socket — no second
@@ -303,7 +310,13 @@ class LandCoverService
 
           # Step 1: is_in() — fast point-in-polygon (~200-500ms)
           result = run_overpass_on(http, uri, IS_IN_OQL.call(lat, lon))
-          if result && (result[:type] != "unknown" || result[:meta] == :forest_no_leaf_type)
+
+          # Only trust is_in() immediately for NATURE types (forest, water, etc.).
+          # Urban types (residential, industrial) from is_in() can be misleading —
+          # Romanian cities often have residential polygons that extend into nearby
+          # forests. The nearby fallback may find actual nature features that
+          # override the urban polygon (e.g., forest near Bacău).
+          if result && (NATURE_TYPES.include?(result[:type]) || result[:meta] == :forest_no_leaf_type)
             return result
           end
 
@@ -314,7 +327,8 @@ class LandCoverService
             return nearby
           end
 
-          # Both returned unknown — return whatever we got
+          # Neither found nature — return is_in() urban result if we had one,
+          # otherwise return whatever we got.
           return result || nearby
         end
       rescue Net::OpenTimeout, Net::ReadTimeout, StandardError => e

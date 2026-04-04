@@ -466,17 +466,16 @@ class Species
       description: "The shelf-shaped survivor of autumn and winter. Oyster mushrooms cluster on dead and dying hardwoods — beech, oak, poplar — and can fruit even after the first frosts.",
       description_ro: "Supraviețuitorul toamnei și iernii, în formă de scoică. Păstrăvul de fag crește în grupuri pe lemn mort de fag, stejar și plop — și poate fructifica chiar și după primele înghețuri.",
       season_months: [3, 4, 5, 9, 10, 11, 12],
-      temp_range: { ideal_min: 5, ideal_max: 15, abs_min: -2, abs_max: 20 },
+      temp_range: { ideal_min: 8, ideal_max: 20, abs_min: -2, abs_max: 26 },
       rain_range: { ideal_min: 10, ideal_max: 40, abs_min: 3, abs_max: 60 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 8 },
       # Oyster mushrooms respond quickly to cold snaps.
       # 5-day average captures the autumn temperature drops that trigger fruiting.
       temp_window: 5,
       # Strict wood-decomposer: needs forests with deadwood. Parks OK (fallen branches).
-      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "park", "wetland"], bad: ["grassland", "farmland", "orchard", "water"] },
+      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "scrubland", "park", "wetland"], bad: ["grassland", "farmland", "orchard", "water"] },
       tips: [
-        "#{IconHelper.icon(:tree_deciduous)} Dead or dying beech, oak, poplar, and willow trees",
-        "#{IconHelper.icon(:log)} Look on fallen logs, stumps, and standing deadwood",
+        "#{IconHelper.icon(:log)} Fallen logs, stumps, and dead beech, oak, poplar, or willow",
         "#{IconHelper.icon(:snowflake)} Cool autumn nights (below 11\u00B0C) trigger fruiting",
         "#{IconHelper.icon(:rain_heavy)} Check 2\u20135 days after autumn rain",
         "#{IconHelper.icon(:fog)} They survive frost \u2014 keep looking into December",
@@ -484,8 +483,7 @@ class Species
         "#{IconHelper.icon(:hand_pick)} Twist gently at the base \u2014 leave the smallest ones"
       ],
       tips_ro: [
-        "#{IconHelper.icon(:tree_deciduous)} Fagi, stejari, plopi și sălcii morți sau pe moarte",
-        "#{IconHelper.icon(:log)} Caută pe bușteni căzuți, cioate și lemn mort în picioare",
+        "#{IconHelper.icon(:log)} Bușteni căzuți, cioate și fagi, stejari, plopi sau sălcii morți",
         "#{IconHelper.icon(:snowflake)} Nopțile reci de toamnă (sub 11\u00B0C) declanșează fructificarea",
         "#{IconHelper.icon(:rain_heavy)} Verifică la 2\u20135 zile după ploaia de toamnă",
         "#{IconHelper.icon(:fog)} Rezistă la îngheț \u2014 continuă să cauți până în decembrie",
@@ -518,7 +516,7 @@ class Species
               <stop offset="50%" stop-color="#6a7888"/>
               <stop offset="100%" stop-color="#505e6e"/>
             </linearGradient>
-            <linearGradient id="oyster-gill" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="oyster-gill" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stop-color="#f0e8d8"/>
               <stop offset="100%" stop-color="#d8ccb8"/>
             </linearGradient>
@@ -526,6 +524,11 @@ class Species
               <stop offset="0%" stop-color="#5a4830"/>
               <stop offset="30%" stop-color="#6b5a40"/>
               <stop offset="70%" stop-color="#5a4830"/>
+              <stop offset="100%" stop-color="#4a3820"/>
+            </linearGradient>
+            <linearGradient id="oyster-bark-v" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6b5a40"/>
+              <stop offset="50%" stop-color="#5a4830"/>
               <stop offset="100%" stop-color="#4a3820"/>
             </linearGradient>
             <filter id="oyster-shadow" x="-10%" y="-10%" width="130%" height="130%">
@@ -538,68 +541,68 @@ class Species
           <rect width="400" height="300" fill="url(#oyster-bg)"/>
           <!-- Forest floor -->
           <ellipse cx="200" cy="285" rx="220" ry="25" fill="#4a4030" opacity="0.25"/>
-          <!-- Fallen log / stump -->
+          <!-- Standing dead tree trunk -->
           <g>
-            <!-- Log body -->
-            <path d="M100 180 Q95 180 90 200 Q88 230 95 260 Q100 275 110 278 L290 278 Q300 275 305 260 Q312 230 310 200 Q305 180 300 180 Z" fill="url(#oyster-bark)"/>
-            <!-- Log end face (cross-section) -->
-            <ellipse cx="105" cy="228" rx="18" ry="50" fill="#7a6a50"/>
-            <ellipse cx="105" cy="228" rx="14" ry="40" fill="#8a7a58" opacity="0.5"/>
-            <!-- Bark texture lines -->
-            <path d="M140 185 Q145 225 138 270" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.3"/>
-            <path d="M180 183 Q182 220 178 272" stroke="#4a3820" stroke-width="1" fill="none" opacity="0.25"/>
-            <path d="M220 183 Q218 225 222 272" stroke="#4a3820" stroke-width="1" fill="none" opacity="0.25"/>
-            <path d="M260 184 Q258 222 262 270" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.3"/>
+            <!-- Trunk body (vertical, slightly tapered) -->
+            <path d="M150 280 L145 60 Q148 30 170 20 Q190 12 210 20 Q232 30 235 60 L230 280 Z" fill="url(#oyster-bark-v)"/>
+            <!-- Bark texture (vertical cracks) -->
+            <path d="M165 40 Q163 120 166 200 Q167 240 165 275" stroke="#4a3820" stroke-width="1.5" fill="none" opacity="0.3"/>
+            <path d="M185 25 Q183 100 186 180 Q187 230 185 275" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.25"/>
+            <path d="M205 25 Q207 110 204 195 Q203 240 205 275" stroke="#4a3820" stroke-width="1.2" fill="none" opacity="0.25"/>
+            <path d="M220 40 Q218 120 221 210 Q222 250 220 275" stroke="#4a3820" stroke-width="1.5" fill="none" opacity="0.3"/>
             <!-- Bark highlights -->
-            <path d="M150 186 Q155 200 152 220" stroke="#7a6a50" stroke-width="2" fill="none" opacity="0.2"/>
-            <path d="M240 185 Q238 210 242 240" stroke="#7a6a50" stroke-width="1.5" fill="none" opacity="0.2"/>
-            <!-- Moss on log -->
-            <ellipse cx="280" cy="275" rx="18" ry="6" fill="#5a8a3a" opacity="0.3"/>
-            <ellipse cx="130" cy="276" rx="12" ry="4" fill="#6a9a4a" opacity="0.25"/>
+            <path d="M175 50 Q173 100 176 160" stroke="#7a6a50" stroke-width="2" fill="none" opacity="0.15"/>
+            <path d="M195 30 Q193 90 196 150" stroke="#7a6a50" stroke-width="1.5" fill="none" opacity="0.12"/>
+            <!-- Broken top -->
+            <path d="M145 60 Q155 45 170 20 Q180 14 190 16" fill="#5a4830" opacity="0.3"/>
+            <!-- Small branch stub -->
+            <path d="M230 90 Q245 85 255 80" stroke="#5a4830" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <path d="M230 90 Q245 85 255 80" stroke="#6b5a40" stroke-width="3" stroke-linecap="round" fill="none"/>
+            <!-- Moss patches on trunk -->
+            <ellipse cx="155" cy="220" rx="8" ry="15" fill="#5a8a3a" opacity="0.25"/>
+            <ellipse cx="160" cy="260" rx="10" ry="12" fill="#6a9a4a" opacity="0.2"/>
           </g>
-          <!-- Oyster mushroom cluster (growing from top of log) -->
+          <!-- Oyster mushroom cluster (growing from RIGHT side of trunk as shelves) -->
           <g filter="url(#oyster-shadow)">
-            <!-- Largest cap (back, center-left) -->
-            <path d="M155 170 Q140 150 135 130 Q132 115 145 105 Q160 95 180 100 Q200 105 210 120 Q215 135 210 155 Q205 170 195 178 Q175 185 155 170 Z" fill="url(#oyster-cap1)"/>
-            <!-- Cap highlight -->
-            <path d="M155 165 Q145 148 143 130 Q142 118 150 112 Q162 105 175 108 Q165 115 160 135 Q157 150 155 165 Z" fill="#b0bcc8" opacity="0.3"/>
-            <!-- Gill lines (underneath, visible at edge) -->
-            <path d="M158 172 Q168 168 178 172" stroke="#d8ccb8" stroke-width="0.8" fill="none" opacity="0.6"/>
-            <path d="M162 176 Q170 172 180 176" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <!-- Upper large cap — shelf protruding right from trunk ~y=100 -->
+            <path d="M228 90 Q260 80 295 85 Q320 92 325 108 Q328 125 310 135 Q290 142 260 140 Q238 136 230 125 Z" fill="url(#oyster-cap1)"/>
+            <path d="M235 95 Q258 88 285 90 Q270 95 255 105 Q242 112 235 118 Z" fill="#b0bcc8" opacity="0.3"/>
+            <!-- Gill lines underneath -->
+            <path d="M240 130 Q265 135 290 132" stroke="#d8ccb8" stroke-width="0.8" fill="none" opacity="0.5"/>
+            <path d="M245 134 Q268 138 288 135" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.4"/>
+            <path d="M250 137 Q270 140 285 138" stroke="#d8ccb8" stroke-width="0.6" fill="none" opacity="0.35"/>
 
-            <!-- Medium cap (right) -->
-            <path d="M210 165 Q220 140 230 125 Q240 112 255 115 Q268 120 272 138 Q275 155 265 168 Q255 180 240 182 Q225 183 215 175 Z" fill="url(#oyster-cap2)"/>
-            <!-- Highlight -->
-            <path d="M215 160 Q222 142 232 130 Q240 120 250 122 Q242 130 237 148 Q233 160 228 170 Z" fill="#a0aeb8" opacity="0.3"/>
+            <!-- Middle large cap — shelf at ~y=150 -->
+            <path d="M230 145 Q268 132 310 140 Q340 150 342 168 Q342 185 320 192 Q295 198 262 195 Q238 190 232 175 Z" fill="url(#oyster-cap2)"/>
+            <path d="M238 150 Q270 140 300 145 Q285 152 268 162 Q252 170 240 172 Z" fill="#a0aeb8" opacity="0.3"/>
             <!-- Gill lines -->
-            <path d="M220 175 Q232 170 245 175" stroke="#d8ccb8" stroke-width="0.8" fill="none" opacity="0.6"/>
-            <path d="M225 179 Q235 175 247 179" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <path d="M245 185 Q275 192 305 187" stroke="#d8ccb8" stroke-width="0.8" fill="none" opacity="0.5"/>
+            <path d="M250 189 Q278 194 302 190" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.4"/>
+            <path d="M255 192 Q280 196 298 193" stroke="#d8ccb8" stroke-width="0.6" fill="none" opacity="0.35"/>
 
-            <!-- Small cap (front-left, overlapping) -->
-            <path d="M170 178 Q158 162 155 148 Q153 138 162 132 Q172 127 185 132 Q195 138 198 152 Q200 165 193 175 Q185 182 175 180 Z" fill="url(#oyster-cap3)"/>
-            <!-- Highlight -->
-            <path d="M170 173 Q163 160 162 148 Q161 140 167 137 Q174 133 178 137 Q172 142 170 155 Q169 165 170 173 Z" fill="#98a4b0" opacity="0.35"/>
+            <!-- Lower medium cap — shelf at ~y=200 -->
+            <path d="M228 205 Q255 195 285 200 Q308 208 310 222 Q310 235 295 240 Q272 245 250 242 Q234 238 230 225 Z" fill="url(#oyster-cap3)"/>
+            <path d="M236 210 Q258 202 278 205 Q265 212 254 220 Q243 226 238 225 Z" fill="#98a4b0" opacity="0.3"/>
             <!-- Gill lines -->
-            <path d="M173 179 Q180 175 188 178" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <path d="M242 234 Q262 240 282 236" stroke="#d8ccb8" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <path d="M246 237 Q265 242 280 239" stroke="#d8ccb8" stroke-width="0.6" fill="none" opacity="0.4"/>
 
-            <!-- Tiny cap (top-right, baby) -->
-            <path d="M240 155 Q248 140 258 135 Q265 132 270 138 Q273 145 268 155 Q262 162 252 163 Q243 162 240 155 Z" fill="url(#oyster-cap1)"/>
-            <!-- Highlight -->
-            <path d="M245 152 Q250 142 256 138 Q260 136 263 140 Q258 143 254 152 Q250 158 248 158 Z" fill="#b0bcc8" opacity="0.25"/>
-
-            <!-- Stem cluster (short, eccentric, merging into log) -->
-            <path d="M175 180 Q172 188 173 195 Q175 200 180 200 Q185 200 186 195 Q188 188 185 180" fill="url(#oyster-gill)"/>
-            <path d="M230 182 Q228 190 230 196 Q232 200 237 199 Q241 198 242 193 Q243 188 240 182" fill="url(#oyster-gill)"/>
-            <path d="M195 178 Q194 184 195 188 Q197 192 200 191 Q203 190 203 186 Q203 182 200 178" fill="url(#oyster-gill)"/>
+            <!-- Tiny baby cap — between upper and middle -->
+            <path d="M226 130 Q242 124 260 128 Q270 133 270 142 Q268 150 255 152 Q240 152 232 145 Z" fill="url(#oyster-cap1)"/>
+            <path d="M232 133 Q245 128 255 131 Q248 135 242 140 Q236 143 234 141 Z" fill="#b0bcc8" opacity="0.25"/>
           </g>
           <!-- Small fallen leaves -->
           <ellipse cx="320" cy="272" rx="22" ry="5" fill="#7a6a30" opacity="0.3" transform="rotate(10 320 272)"/>
           <ellipse cx="80" cy="275" rx="18" ry="4" fill="#8a7a3a" opacity="0.25" transform="rotate(-15 80 275)"/>
           <!-- Grass tufts -->
-          <path d="M340 278 Q342 265 338 255" stroke="#5a8a3a" stroke-width="1.3" fill="none" opacity="0.35"/>
-          <path d="M345 278 Q346 267 349 258" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
-          <path d="M55 277 Q53 266 57 258" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
-          <path d="M60 277 Q62 268 59 260" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.25"/>
+          <path d="M60 278 Q58 265 62 255" stroke="#5a8a3a" stroke-width="1.3" fill="none" opacity="0.35"/>
+          <path d="M65 278 Q67 267 64 258" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
+          <path d="M340 278 Q338 268 342 260" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
+          <path d="M345 278 Q347 269 344 261" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.25"/>
+          <!-- Fern at base of trunk -->
+          <path d="M135 275 Q128 258 120 248" stroke="#5a8a3a" stroke-width="1.5" fill="none" opacity="0.35"/>
+          <path d="M138 275 Q132 260 128 252" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
+          <path d="M142 275 Q148 260 155 250" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
         </svg>
       SVG
     }

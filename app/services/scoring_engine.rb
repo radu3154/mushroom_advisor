@@ -250,9 +250,26 @@ class ScoringEngine
 
   def season_window_text
     months = @species[:season_months]
-    first = month_name(months.first)
-    last = month_name(months.last)
-    @lang == "ro" ? "Așteaptă #{first}–#{last}" : "Wait for #{first}–#{last}"
+    current = @weather[:current_month]
+
+    # Find the next season month from current (wrapping to next year if needed)
+    next_month = months.find { |m| m > current } || months.first
+    start_idx = months.index(next_month)
+
+    # Walk forward through the contiguous run starting at next_month
+    end_idx = start_idx
+    while end_idx + 1 < months.size && months[end_idx + 1] == months[end_idx] + 1
+      end_idx += 1
+    end
+
+    first = month_name(months[start_idx])
+    last = month_name(months[end_idx])
+
+    if first == last
+      @lang == "ro" ? "Așteaptă #{first}" : "Wait for #{first}"
+    else
+      @lang == "ro" ? "Așteaptă #{first}–#{last}" : "Wait for #{first}–#{last}"
+    end
   end
 
   def out_of_season_explanation(species_name)

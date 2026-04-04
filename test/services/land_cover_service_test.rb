@@ -870,6 +870,24 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "residential", result
   end
 
+  # ══════════════════════════════════════════════════════════════════════
+  # NATURE_TYPES — urban types should NOT be in the set
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_nature_types_includes_terrain_labels
+    %w[deciduous coniferous mixed grassland wetland orchard scrubland farmland park water].each do |t|
+      assert LandCoverService::NATURE_TYPES.include?(t),
+        "NATURE_TYPES should include '#{t}'"
+    end
+  end
+
+  def test_nature_types_excludes_urban
+    %w[residential industrial commercial railway education religious].each do |t|
+      refute LandCoverService::NATURE_TYPES.include?(t),
+        "NATURE_TYPES should NOT include '#{t}'"
+    end
+  end
+
   # Elevation boundary values
   def test_elevation_1800_is_alpine
     result = LandCoverService.send(:elevation_guess, 1800)
@@ -900,5 +918,236 @@ class LandCoverServiceTest < Minitest::Test
   def test_elevation_399_returns_nil
     result = LandCoverService.send(:elevation_guess, 399)
     assert_nil result
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Additional edge cases — deep bug hunt
+  # ══════════════════════════════════════════════════════════════════════
+
+  # TERRAIN_MAP coverage: test all mapped tags produce valid types
+  def test_terrain_map_all_tags_parseable
+    LandCoverService::TERRAIN_MAP.each do |tag, category|
+      elements = [osm("landuse" => tag)]
+      result = LandCoverService.send(:parse_overpass_elements, elements)
+      if result[:type] == "unknown" && result[:meta] != :forest_no_leaf_type
+        elements = [osm("natural" => tag)]
+        result = LandCoverService.send(:parse_overpass_elements, elements)
+      end
+      # forest/wood without leaf_type → forest_no_leaf_type (valid, pending elevation)
+      valid = result[:type] != "unknown" || result[:meta] == :forest_no_leaf_type
+      assert valid,
+        "Tag '#{tag}' (→ #{category}) should parse to valid type, got #{result[:type]} meta=#{result[:meta]}"
+    end
+  end
+
+  def test_overpass_heath_maps_to_grassland
+    elements = [osm("natural" => "heath")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_fell_maps_to_grassland
+    elements = [osm("natural" => "fell")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_village_green_maps_to_grassland
+    elements = [osm("landuse" => "village_green")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_recreation_ground_maps_to_grassland
+    elements = [osm("landuse" => "recreation_ground")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "grassland", result[:type]
+  end
+
+  def test_overpass_allotments_maps_to_farmland
+    elements = [osm("landuse" => "allotments")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "farmland", result[:type]
+  end
+
+  def test_overpass_garden_maps_to_park
+    elements = [osm("leisure" => "garden")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "park", result[:type]
+  end
+
+  # Forest with BOTH leaf_type AND genus — leaf_type should win
+  def test_forest_leaf_type_takes_priority_over_genus
+    elements = [osm("landuse" => "forest", "leaf_type" => "broadleaved", "genus" => "Picea")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type],
+      "leaf_type=broadleaved should win over genus=Picea"
+  end
+
+  # Multiple water + forest: water wins
+  def test_water_beats_forest_even_with_leaf_type
+    elements = [
+      osm("landuse" => "forest", "leaf_type" => "broadleaved"),
+      osm("waterway" => "stream")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "water", result[:type]
+  end
+
+  # Only IGNORE_TAGS present → unknown
+  def test_only_ignored_tags_returns_unknown
+    elements = [
+      osm("natural" => "peak"),
+      osm("natural" => "ridge"),
+      osm("natural" => "mountain_range")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "unknown", result[:type]
+  end
+
+  # Tags with nil values should not crash
+  def test_element_with_nil_tags_does_not_crash
+    result = LandCoverService.send(:parse_overpass_elements, [{ "tags" => nil }])
+    assert_equal "unknown", result[:type]
+  end
+
+  def test_element_with_empty_tags_does_not_crash
+    result = LandCoverService.send(:parse_overpass_elements, [{ "tags" => {} }])
+    assert_equal "unknown", result[:type]
+  end
+
+  def test_element_missing_tags_key_does_not_crash
+    result = LandCoverService.send(:parse_overpass_elements, [{}])
+    assert_equal "unknown", result[:type]
+  end
+
+  # Nominatim: leisure=garden should return park
+  def test_nominatim_garden_is_park
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("leisure", "garden"))
+    assert_equal "park", result[:type]
+  end
+
+  # Nominatim: leisure=nature_reserve should return park
+  def test_nominatim_nature_reserve_is_park
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("leisure", "nature_reserve"))
+    assert_equal "park", result[:type]
+  end
+
+  # Nominatim: class=aeroway → commercial
+  def test_nominatim_aeroway_is_commercial
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("aeroway", "aerodrome"))
+    assert_equal "commercial", result[:type]
+  end
+
+  # Nominatim: class=tourism should detect urban
+  def test_nominatim_tourism_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("tourism", "hotel"))
+    assert_equal "residential", result[:type]
+  end
+
+  # Nominatim: class=man_made should detect urban
+  def test_nominatim_man_made_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("man_made", "tower"))
+    assert_equal "residential", result[:type]
+  end
+
+  # Nominatim: class=power should detect urban
+  def test_nominatim_power_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("power", "substation"))
+    assert_equal "residential", result[:type]
+  end
+
+  # Nominatim: amenity kindergarten → education
+  def test_nominatim_kindergarten_detects_education
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("amenity", "kindergarten"))
+    assert_equal "education", result[:type]
+  end
+
+  # Nominatim: amenity library → education
+  def test_nominatim_library_detects_education
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("amenity", "library"))
+    assert_equal "education", result[:type]
+  end
+
+  # Nominatim: amenity monastery → religious
+  def test_nominatim_monastery_detects_religious
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("amenity", "monastery"))
+    assert_equal "religious", result[:type]
+  end
+
+  # Cache: store and retrieve
+  def test_cache_store_and_retrieve
+    test_result = { type: "deciduous", label_en: "Test", label_ro: "Test", source: "test" }
+    LandCoverService.store_cache(99.99, 88.88, test_result)
+    cached = LandCoverService.cached_terrain(99.99, 88.88)
+    assert_equal "deciduous", cached[:type]
+    assert_equal "test", cached[:source]
+  end
+
+  def test_cache_miss_returns_nil
+    result = LandCoverService.cached_terrain(0.01, 0.01)
+    assert_nil result
+  end
+
+  # refine_with_elevation: known terrain not overridden at high elevation
+  def test_known_farmland_not_overridden_at_high_elevation
+    result = { type: "farmland", label_en: "Farmland", label_ro: "Teren agricol", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 1500)
+    assert_equal "farmland", refined[:type],
+      "Known farmland should not be changed to coniferous by elevation"
+  end
+
+  # refine_with_elevation: nil elevation returns as-is
+  def test_refine_nil_elevation_returns_result
+    result = { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, nil)
+    assert_equal "deciduous", refined[:type]
+  end
+
+  # WATER_TYPES completeness
+  def test_water_types_all_detected_via_overpass
+    %w[water lake pond reservoir basin riverbank sea bay strait river stream canal].each do |wtype|
+      elements = [osm("natural" => wtype)]
+      result = LandCoverService.send(:parse_overpass_elements, elements)
+      assert_equal "water", result[:type],
+        "WATER_TYPE '#{wtype}' should parse as water via natural tag, got #{result[:type]}"
+    end
+  end
+
+  # Priority: orchard > grassland > wetland > scrubland > farmland > park
+  def test_overpass_orchard_beats_wetland
+    elements = [
+      osm("natural" => "wetland"),
+      osm("landuse" => "orchard")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "orchard", result[:type]
+  end
+
+  def test_overpass_wetland_beats_farmland
+    elements = [
+      osm("landuse" => "farmland"),
+      osm("natural" => "wetland")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "wetland", result[:type]
+  end
+
+  def test_overpass_farmland_beats_park
+    elements = [
+      osm("leisure" => "park"),
+      osm("landuse" => "farmland")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "farmland", result[:type]
+  end
+
+  # Multiple Nominatim place types should all be urban
+  def test_nominatim_all_urban_place_types
+    %w[city town suburb quarter neighbourhood borough village hamlet].each do |ptype|
+      result = LandCoverService.send(:parse_nominatim_response, nominatim("place", ptype))
+      assert_equal "residential", result[:type],
+        "Place type '#{ptype}' should detect as residential"
+    end
   end
 end
