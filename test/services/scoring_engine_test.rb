@@ -372,4 +372,151 @@ class ScoringEngineTest < Minitest::Test
     result = ScoringEngine.new("morel", w, lang: "en").call
     assert result[:score] >= 0, "Should handle zero rain + zero days gracefully"
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Oyster mushroom (Pleurotus ostreatus) — species-specific tests
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_oyster_exists_in_catalog
+    species = Species.find("oyster")
+    assert species, "Oyster should exist in species catalog"
+    assert_equal "Pleurotus ostreatus", species[:latin]
+    assert_equal "Păstrăvul de fag", species[:name_ro]
+  end
+
+  def test_oyster_peak_autumn_conditions
+    # Perfect oyster weather: cool October day, recent rain
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] >= 70, "Oyster in ideal October conditions should score >= 70, got #{result[:score]}"
+    assert %w[excellent good].include?(result[:tier])
+  end
+
+  def test_oyster_peak_november
+    w = weather(temp: 7, rain: 20, days_since: 3, month: 11)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] >= 60, "Oyster in November should score well, got #{result[:score]}"
+  end
+
+  def test_oyster_peak_december_cold
+    # Oyster can fruit in near-freezing temps
+    w = weather(temp: 2, rain: 15, days_since: 3, month: 12)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] > 0, "Oyster should still score > 0 at 2°C, got #{result[:score]}"
+  end
+
+  def test_oyster_out_of_season_summer
+    w = weather(temp: 25, rain: 30, days_since: 3, month: 7)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 0, result[:score]
+    assert_equal "out-of-season", result[:tier]
+  end
+
+  def test_oyster_out_of_season_spring
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 0, result[:score]
+    assert_equal "out-of-season", result[:tier]
+  end
+
+  def test_oyster_season_months
+    species = Species.find("oyster")
+    assert_equal [9, 10, 11, 12], species[:season_months]
+  end
+
+  def test_oyster_temp_range_includes_subfreezing
+    species = Species.find("oyster")
+    assert species[:temp_range][:abs_min] < 0, "Oyster abs_min should be below zero"
+  end
+
+  def test_oyster_too_warm_kills_score
+    w = weather(temp: 25, rain: 20, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 0, result[:score], "Oyster at 25°C (above abs_max 20) should score 0"
+  end
+
+  def test_oyster_terrain_deciduous_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("oyster", "deciduous")
+  end
+
+  def test_oyster_terrain_mixed_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("oyster", "mixed")
+  end
+
+  def test_oyster_terrain_coniferous_partial
+    assert_equal :partial, ScoringEngine.terrain_match("oyster", "coniferous")
+  end
+
+  def test_oyster_terrain_park_partial
+    assert_equal :partial, ScoringEngine.terrain_match("oyster", "park")
+  end
+
+  def test_oyster_terrain_grassland_bad
+    assert_equal :bad, ScoringEngine.terrain_match("oyster", "grassland")
+  end
+
+  def test_oyster_terrain_farmland_bad
+    assert_equal :bad, ScoringEngine.terrain_match("oyster", "farmland")
+  end
+
+  def test_oyster_romanian_labels
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    assert %w[EXCELENT BINE ACCEPTABIL SLAB EVITĂ].include?(result[:label]),
+      "Romanian label should be valid, got #{result[:label]}"
+  end
+
+  def test_oyster_romanian_out_of_season
+    w = weather(temp: 20, rain: 30, days_since: 3, month: 6)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    assert_equal "ÎN AFARA SEZONULUI", result[:label]
+  end
+
+  def test_oyster_tips_returned
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:tips].is_a?(Array)
+    assert result[:tips].size >= 5
+  end
+
+  def test_oyster_tips_ro_returned
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    assert result[:tips].is_a?(Array)
+    assert result[:tips].size >= 5
+    assert result[:tips].any? { |t| t.include?("fag") || t.include?("Fagi") },
+      "Romanian tips should mention beech (fag)"
+  end
+
+  def test_oyster_has_svg
+    species = Species.find("oyster")
+    assert species[:svg], "Oyster should have SVG"
+    assert species[:svg].include?("oyster-cap"), "SVG should contain oyster-cap elements"
+  end
+
+  def test_oyster_has_color_scheme
+    species = Species.find("oyster")
+    assert species[:color], "Oyster should have a color"
+    assert species[:gradient_from], "Oyster should have gradient_from"
+    assert species[:gradient_to], "Oyster should have gradient_to"
+  end
+
+  def test_oyster_temp_window
+    species = Species.find("oyster")
+    assert_equal 5, species[:temp_window], "Oyster should use 5-day temp window"
+  end
+
+  def test_oyster_explanation_four_parts
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Oyster explanation should have 4 parts"
+  end
+
+  def test_oyster_explanation_ro_four_parts
+    w = weather(temp: 10, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Oyster RO explanation should have 4 parts"
+  end
 end

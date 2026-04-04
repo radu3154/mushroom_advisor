@@ -65,6 +65,10 @@ module IconHelper
 
     hand_pick: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="1em" height="1em" style="vertical-align:-0.15em"><path d="M10 2c0 0-3 2-3 5 0 1.5 1 2.5 2 3v6c0 1 .5 2 1 2s1-1 1-2V10c1-.5 2-1.5 2-3 0-3-3-5-3-5z" fill="#d4a843"/><path d="M7 10c-1 0-2 .5-2 1.5s1 2 2 2" fill="none" stroke="#c0392b" stroke-width=".9"/><path d="M13 10c1 0 2 .5 2 1.5s-1 2-2 2" fill="none" stroke="#c0392b" stroke-width=".9"/></svg>',
 
+    snowflake: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="1em" height="1em" style="vertical-align:-0.15em"><g stroke="#6aaef0" stroke-width="1.3" stroke-linecap="round"><line x1="10" y1="2" x2="10" y2="18"/><line x1="3" y1="6" x2="17" y2="14"/><line x1="3" y1="14" x2="17" y2="6"/><line x1="10" y1="2" x2="8" y2="4"/><line x1="10" y1="2" x2="12" y2="4"/><line x1="10" y1="18" x2="8" y2="16"/><line x1="10" y1="18" x2="12" y2="16"/><line x1="3" y1="6" x2="5" y2="4.5"/><line x1="3" y1="6" x2="4" y2="8"/><line x1="17" y1="14" x2="15" y2="15.5"/><line x1="17" y1="14" x2="16" y2="12"/></g></svg>',
+
+    log: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="1em" height="1em" style="vertical-align:-0.15em"><ellipse cx="16" cy="11" rx="3" ry="5" fill="#8B6534"/><rect x="3" y="6" width="13" height="10" rx="2" fill="#a07040"/><ellipse cx="3" cy="11" rx="3" ry="5" fill="#c0955a"/><circle cx="3.5" cy="9.5" r="1.2" fill="#8B6534" opacity=".5"/><circle cx="2.5" cy="12" r=".8" fill="#8B6534" opacity=".4"/><path d="M3 8.5c.5-.3 1-.3 1.5.1" fill="none" stroke="#8B5a1e" stroke-width=".5"/></svg>',
+
     # --- Mixed forest (conifer + deciduous) ---
     mixed_forest: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="1em" height="1em" style="vertical-align:-0.15em"><polygon points="6,3 2,12 4,12 1,16 11,16 8,12 10,12" fill="#2d7a30"/><polygon points="6,3 4,8 8,8" fill="#3da843" opacity=".4"/><circle cx="14" cy="8" r="4.5" fill="#5cb85c"/><circle cx="12.5" cy="7" r="2" fill="#7aca7a" opacity=".5"/><rect x="5" y="15" width="2" height="3" fill="#8B6534"/><rect x="13" y="12" width="2" height="6" rx=".5" fill="#8B6534"/></svg>',
   }.freeze

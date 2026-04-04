@@ -68,13 +68,27 @@ class LandCoverService
     "meadow"     => :grassland, "grass"     => :grassland,
     "grassland"  => :grassland, "pasture"   => :grassland,
     "heath"      => :grassland, "fell"      => :grassland,
-    "wetland"    => :grassland,
     "village_green" => :grassland, "recreation_ground" => :grassland,
+    "wetland"    => :wetland,
+    "marsh"      => :wetland,   "bog"       => :wetland,
+    "swamp"      => :wetland,   "fen"       => :wetland,
     "orchard"    => :orchard,
     "vineyard"   => :farmland,  "farmland"  => :farmland,
     "allotments" => :farmland,
     "scrub"      => :scrubland,
   }.freeze
+
+  # Genus → leaf type inference for forests missing leaf_type tag.
+  # Common Romanian tree genera mapped to broadleaved/needleleaved.
+  BROADLEAVED_GENERA = Set.new(%w[
+    quercus fagus carpinus fraxinus acer betula tilia ulmus alnus
+    populus salix prunus sorbus castanea robinia corylus platanus
+  ]).freeze
+
+  NEEDLELEAVED_GENERA = Set.new(%w[
+    picea abies pinus larix juniperus taxus pseudotsuga
+    cedrus tsuga cupressus
+  ]).freeze
 
   # Large-scale geographic features to ignore from is_in() results.
   IGNORE_TAGS = Set.new(%w[
@@ -89,6 +103,7 @@ class LandCoverService
     coniferous: { en: "Coniferous forest",  ro: "Pădure de conifere" },
     mixed:      { en: "Mixed forest",       ro: "Pădure mixtă" },
     grassland:  { en: "Meadow",             ro: "Pajiște" },
+    wetland:    { en: "Wetland",            ro: "Zonă umedă" },
     orchard:    { en: "Orchard",            ro: "Livadă" },
     scrubland:  { en: "Scrubland",          ro: "Tufăriș" },
     farmland:   { en: "Farmland",           ro: "Teren agricol" },
@@ -193,6 +208,14 @@ class LandCoverService
 
     if result[:meta] == :forest_no_leaf_type
       return { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm_default" }
+    end
+
+    # Lowland heuristic: if completely unknown at 1-399m, it's likely
+    # farmland or grassland (very common in Romania's plains/hills).
+    # Better than "Unknown terrain" — gives the user something useful.
+    if result[:type] == "unknown" && elevation && elevation > 0 && elevation < 400
+      return { type: "farmland", label_en: "Lowland (likely farmland)",
+               label_ro: "Câmpie (probabil teren agricol)", source: "elevation_hint" }
     end
 
     result.except(:meta)
@@ -322,7 +345,7 @@ class LandCoverService
   def self.parse_overpass_elements(elements)
     return unknown_result("none") if elements.empty?
 
-    categories = { forest: [], grassland: [], orchard: [], scrubland: [],
+    categories = { forest: [], grassland: [], wetland: [], orchard: [], scrubland: [],
                    farmland: [], park: [], water: [], other: [] }
 
     elements.each do |e|
@@ -363,7 +386,7 @@ class LandCoverService
       return terrain_result("water", "osm")
     end
 
-    # 2. Forest — try to determine leaf type
+    # 2. Forest — determine leaf type from leaf_type, genus, or species tags
     if categories[:forest].any?
       leaf_types = categories[:forest].map { |e| e.dig("tags", "leaf_type") }.compact
       if leaf_types.include?("broadleaved")
@@ -372,15 +395,22 @@ class LandCoverService
         return terrain_result("coniferous", "osm")
       elsif leaf_types.include?("mixed")
         return terrain_result("mixed", "osm")
-      else
-        return { type: "unknown", label_en: "Forest (type unknown)",
-                 label_ro: "Pădure (tip neidentificat)",
-                 source: "osm_partial", meta: :forest_no_leaf_type }
       end
+
+      # Fallback: infer from genus/species tags when leaf_type is missing.
+      # Many Romanian forests have genus=Fagus or species=Picea abies but no leaf_type.
+      inferred = infer_leaf_type_from_taxa(categories[:forest])
+      if inferred
+        return terrain_result(inferred, "osm_inferred")
+      end
+
+      return { type: "unknown", label_en: "Forest (type unknown)",
+               label_ro: "Pădure (tip neidentificat)",
+               source: "osm_partial", meta: :forest_no_leaf_type }
     end
 
-    # 3-7. Other terrain types
-    %i[orchard grassland scrubland farmland park].each do |cat|
+    # 3-8. Other terrain types (priority order)
+    %i[orchard grassland wetland scrubland farmland park].each do |cat|
       if categories[cat].any?
         return terrain_result(cat.to_s, "osm")
       end
@@ -462,9 +492,12 @@ class LandCoverService
     # is in a city/town. Many Romanian cities (Constanța, Brașov suburbs, etc.)
     # lack explicit landuse=residential polygons in OSM, so Overpass finds nothing.
     # Nominatim still returns the nearest building or road though.
+    # Sub-classify: shop→commercial, amenity+school→education, etc.
     if URBAN_CLASSES.include?(osm_class) || (osm_class == "place" && URBAN_PLACE_TYPES.include?(osm_type))
-      return { type: "residential", label_en: "Residential area",
-               label_ro: "Zonă rezidențială", source: "nominatim" }
+      urban_type = nominatim_urban_subtype(osm_class, osm_type)
+      label_en = (urban_type.tr("_", " ").capitalize + " area")
+      label_ro = OTHER_LABELS_RO[urban_type] || label_en
+      return { type: urban_type, label_en: label_en, label_ro: label_ro, source: "nominatim" }
     end
 
     nil  # Not terrain-relevant — return nil so orchestrator falls through
@@ -491,5 +524,47 @@ class LandCoverService
     band = ELEVATION_BANDS.find { |b| b[:range].include?(elevation) }
     return nil unless band
     { type: band[:type], label_en: band[:label_en], label_ro: band[:label_ro], source: "elevation" }
+  end
+
+  # Infer leaf type from genus/species OSM tags when leaf_type is missing.
+  # Returns "deciduous", "coniferous", "mixed", or nil.
+  def self.infer_leaf_type_from_taxa(forest_elements)
+    broad = false
+    needle = false
+
+    forest_elements.each do |e|
+      tags = e["tags"] || {}
+      # Check genus directly, or extract from species (e.g., "Picea abies" → "picea")
+      genus = (tags["genus"] || tags["species"]&.split(" ")&.first).to_s.downcase
+      next if genus.empty?
+
+      broad = true if BROADLEAVED_GENERA.include?(genus)
+      needle = true if NEEDLELEAVED_GENERA.include?(genus)
+    end
+
+    if broad && needle
+      "mixed"
+    elsif broad
+      "deciduous"
+    elsif needle
+      "coniferous"
+    end
+  end
+
+  # Sub-classify Nominatim urban detections for better labels.
+  def self.nominatim_urban_subtype(osm_class, osm_type)
+    case osm_class
+    when "shop"     then "commercial"
+    when "office"   then "commercial"
+    when "railway"  then "railway"
+    when "aeroway"  then "commercial"
+    when "amenity"
+      case osm_type
+      when "school", "university", "college", "kindergarten", "library" then "education"
+      when "place_of_worship", "monastery" then "religious"
+      else "residential"
+      end
+    else "residential"
+    end
   end
 end
