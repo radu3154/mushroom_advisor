@@ -141,6 +141,13 @@ class LandCoverService
   # ── Public API ───────────────────────────────────────────────────────
 
   def self.detect(lat:, lon:, elevation: nil)
+    # Hard override: elevation <= 0 means water (sea, below sea level).
+    # Must check BEFORE terrain detection — around:150 can pick up
+    # coastal features (meadows, beaches) when standing in the sea.
+    if elevation && elevation <= 0
+      return terrain_result("water", "elevation")
+    end
+
     result = query_terrain(lat, lon)
 
     return result if result[:type] == "water"

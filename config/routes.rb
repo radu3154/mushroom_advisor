@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   resources :mushrooms, only: [:index] do
     collection do
       post :score
+      get :check_terrain
     end
   end
 end

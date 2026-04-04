@@ -24,49 +24,20 @@ class MushroomsController < ApplicationController
     # Species-specific temp averaging window (soil-temp proxy for morels, etc.)
     temp_window = species_info[:temp_window] || 7
 
-    # Fetch weather and terrain IN PARALLEL when terrain isn't cached.
-    terrain_cached = params[:terrain_type].present? && params[:terrain_label_en].present?
+    # Weather only — terrain is fetched lazily via check_terrain AJAX.
+    weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon, temp_window: temp_window)
 
-    if terrain_cached
-      land_cover = {
-        type: params[:terrain_type],
-        label_en: params[:terrain_label_en],
-        label_ro: params[:terrain_label_ro] || params[:terrain_label_en],
-        source: "cached"
-      }
-      weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon, temp_window: temp_window)
-    else
-      weather_data = nil
-      land_cover = nil
-      weather_thread = Thread.new { weather_data = WeatherService.new.fetch_for_location(lat: lat, lon: lon, temp_window: temp_window) }
-      terrain_thread = Thread.new { land_cover = LandCoverService.detect(lat: lat, lon: lon) }
-      weather_thread.join
-      terrain_thread.join
-
-      # Refine terrain with elevation from weather (alpine meadow, forest type)
-      if land_cover[:type] == "unknown" || land_cover.delete(:needs_elevation)
-        land_cover = LandCoverService.refine_with_elevation(land_cover, weather_data[:elevation])
-      end
-    end
-
-    result = ScoringEngine.new(species_key, weather_data, lang: @lang, land_cover: land_cover).call
-
-    # Inject terrain into params so the lang-switch form carries it forward
-    params[:terrain_type] = land_cover[:type]
-    params[:terrain_label_en] = land_cover[:label_en]
-    params[:terrain_label_ro] = land_cover[:label_ro]
-
-    terrain_label = @lang == "ro" ? land_cover[:label_ro] : land_cover[:label_en]
-    terrain_match = ScoringEngine.terrain_match(species_key, land_cover[:type])
+    result = ScoringEngine.new(species_key, weather_data, lang: @lang).call
 
     @result = result.merge(
+      species_key: species_key,
       species_name: Species.localized(species_info, :name, @lang),
       species_latin: species_info[:latin],
       weather: weather_data[:raw] || {},
       location_name: location_name,
-      land_cover: land_cover,
-      terrain_label: terrain_label,
-      terrain_match: terrain_match,
+      lat: lat,
+      lon: lon,
+      elevation: weather_data[:elevation],
       weather_stats: {
         avg_temp: weather_data[:avg_temp],
         total_rain: weather_data[:total_rain_7d],
@@ -83,6 +54,44 @@ class MushroomsController < ApplicationController
     Rails.logger.error "WeatherService error: #{e.message}"
     flash[:error] = I18nHelper.t(:weather_error, @lang) || "Weather data is temporarily unavailable. Please try again later."
     redirect_to root_path(lang: @lang)
+  end
+
+  # AJAX endpoint — terrain detection on demand.
+  # Called when user clicks "Check terrain" button.
+  def check_terrain
+    lat = params[:lat].to_f
+    lon = params[:lon].to_f
+    elevation = params[:elevation]&.to_f
+    species_key = params[:species]
+    lang = %w[en ro].include?(params[:lang]) ? params[:lang] : "ro"
+
+    land_cover = LandCoverService.detect(lat: lat, lon: lon, elevation: elevation)
+
+    # Refine with elevation if needed (forest type, alpine meadow)
+    if land_cover[:type] == "unknown" || land_cover.delete(:needs_elevation)
+      land_cover = LandCoverService.refine_with_elevation(land_cover, elevation)
+    end
+
+    terrain_label = lang == "ro" ? land_cover[:label_ro] : land_cover[:label_en]
+    terrain_match = ScoringEngine.terrain_match(species_key, land_cover[:type])
+    is_water = land_cover[:type] == "water"
+    is_urban = ScoringEngine::URBAN_TYPES.include?(land_cover[:type])
+
+    match_key = :"terrain_#{terrain_match}"
+    match_text = I18nHelper.t(match_key, lang)
+
+    render json: {
+      terrain_label: terrain_label,
+      terrain_match: terrain_match,
+      match_text: match_text,
+      is_water: is_water,
+      is_urban: is_urban,
+      water_message: is_water ? (I18nHelper.t(:water_warning, lang) || (lang == "ro" ? "Ești pe apă! Ciupercile nu cresc aici." : "You're on water! Mushrooms don't grow here.")) : nil,
+      urban_message: is_urban ? (lang == "ro" ? "Aici nu cresc ciuperci — mută pinul spre o pădure sau pajiște." : "No mushrooms here — try moving the pin to a forest or meadow.") : nil
+    }
+  rescue => e
+    Rails.logger.error "CheckTerrain error: #{e.message}"
+    render json: { error: true, terrain_label: lang == "ro" ? "Eroare detecție teren" : "Terrain detection error" }, status: :ok
   end
 
   private
