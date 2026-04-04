@@ -465,7 +465,7 @@ class Species
       latin: "Pleurotus ostreatus",
       description: "The shelf-shaped survivor of autumn and winter. Oyster mushrooms cluster on dead and dying hardwoods — beech, oak, poplar — and can fruit even after the first frosts.",
       description_ro: "Supraviețuitorul toamnei și iernii, în formă de scoică. Păstrăvul de fag crește în grupuri pe lemn mort de fag, stejar și plop — și poate fructifica chiar și după primele înghețuri.",
-      season_months: [9, 10, 11, 12],
+      season_months: [3, 4, 5, 9, 10, 11, 12],
       temp_range: { ideal_min: 5, ideal_max: 15, abs_min: -2, abs_max: 20 },
       rain_range: { ideal_min: 10, ideal_max: 40, abs_min: 3, abs_max: 60 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 8 },

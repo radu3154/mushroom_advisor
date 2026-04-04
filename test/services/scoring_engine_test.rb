@@ -412,16 +412,29 @@ class ScoringEngineTest < Minitest::Test
     assert_equal "out-of-season", result[:tier]
   end
 
-  def test_oyster_out_of_season_spring
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+  def test_oyster_out_of_season_midsummer
+    w = weather(temp: 20, rain: 30, days_since: 3, month: 8)
     result = ScoringEngine.new("oyster", w, lang: "en").call
     assert_equal 0, result[:score]
     assert_equal "out-of-season", result[:tier]
   end
 
+  def test_oyster_in_season_spring
+    w = weather(temp: 10, rain: 20, days_since: 3, month: 4)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] > 0, "Oyster should be in season in April, got score=#{result[:score]}"
+    refute result[:out_of_season]
+  end
+
+  def test_oyster_in_season_march
+    w = weather(temp: 8, rain: 15, days_since: 3, month: 3)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] > 0, "Oyster should be in season in March"
+  end
+
   def test_oyster_season_months
     species = Species.find("oyster")
-    assert_equal [9, 10, 11, 12], species[:season_months]
+    assert_equal [3, 4, 5, 9, 10, 11, 12], species[:season_months]
   end
 
   def test_oyster_temp_range_includes_subfreezing
