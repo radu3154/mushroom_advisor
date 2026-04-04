@@ -386,13 +386,14 @@ class LandCoverService
       end
     end
 
-    # Something found but not in our map
+    # Something found but not in our map — use the actual OSM tag as type
+    # so urban detection (URBAN_TYPES) can match residential, industrial, etc.
     if categories[:other].any?
       first = categories[:other].first["tags"] || {}
-      tag = first["landuse"] || first["natural"] || first["leisure"] || "detected"
+      tag = first["landuse"] || first["natural"] || first["leisure"] || "other"
       label_en = tag.tr("_", " ").capitalize
       label_ro = OTHER_LABELS_RO[tag] || label_en
-      return { type: "other", label_en: label_en, label_ro: label_ro, source: "osm" }
+      return { type: tag, label_en: label_en, label_ro: label_ro, source: "osm" }
     end
 
     unknown_result("none")

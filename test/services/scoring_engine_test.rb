@@ -252,4 +252,124 @@ class ScoringEngineTest < Minitest::Test
     burn_tips = result[:tips].select { |t| t.downcase.include?("burn") }
     assert_equal 1, burn_tips.size, "Should have exactly one burn-site tip, got #{burn_tips.size}"
   end
+
+  # ── Additional edge cases ──────────────────────────────────────────
+
+  def test_score_never_exceeds_100_any_species_any_conditions
+    # Brute force: sweep through conditions to catch overflow
+    Species.keys.each do |key|
+      species = Species.find(key)
+      species[:season_months].each do |month|
+        [0, 5, 10, 15, 20, 25, 30, 35].each do |temp|
+          [0, 5, 15, 25, 40, 60].each do |rain|
+            [0, 1, 3, 5, 7, 10, 15].each do |days|
+              w = weather(temp: temp, rain: rain, days_since: days, month: month)
+              result = ScoringEngine.new(key, w, lang: "en").call
+              assert result[:score] >= 0 && result[:score] <= 100,
+                "#{key} temp=#{temp} rain=#{rain} days=#{days} month=#{month}: score=#{result[:score]} out of range"
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def test_score_breakdown_sums_to_total_or_zero
+    Species.keys.each do |key|
+      w = weather(temp: 12, rain: 20, days_since: 4, month: Species.find(key)[:season_months].first)
+      result = ScoringEngine.new(key, w, lang: "en").call
+      bd = result[:breakdown]
+      sum = bd[:season] + bd[:temperature] + bd[:rain] + bd[:timing]
+      # Total equals sum, OR total is 0 when hard-killed by abs range
+      assert result[:score] == sum || result[:score] == 0,
+        "#{key}: breakdown sum=#{sum} but score=#{result[:score]}"
+    end
+  end
+
+  def test_no_land_cover_does_not_crash
+    # Controller calls ScoringEngine without land_cover — should work fine
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:score] >= 0, "Should score without land_cover"
+    refute result[:on_water], "Should not flag on_water without land_cover"
+    refute result[:on_urban], "Should not flag on_urban without land_cover"
+  end
+
+  def test_default_land_cover_is_unknown
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    # land_cover defaults to { type: "unknown" } — should NOT trigger water or urban
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:score] > 0, "unknown land_cover should not zero-out score"
+  end
+
+  def test_terrain_match_nil_species
+    assert_equal :unknown, ScoringEngine.terrain_match("nonexistent", "deciduous")
+  end
+
+  def test_terrain_match_nil_terrain
+    assert_equal :unknown, ScoringEngine.terrain_match("morel", nil)
+  end
+
+  def test_all_urban_types_trigger_skip
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    ScoringEngine::URBAN_TYPES.each do |urban_type|
+      lc = { type: urban_type, label_en: urban_type, label_ro: urban_type, source: "osm" }
+      result = ScoringEngine.new("morel", w, lang: "en", land_cover: lc).call
+      assert_equal 0, result[:score], "Urban type '#{urban_type}' should score 0"
+      assert result[:on_urban], "Urban type '#{urban_type}' should flag on_urban"
+    end
+  end
+
+  def test_explanation_has_four_parts
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Explanation should have 4 parts separated by ·, got #{parts.size}"
+  end
+
+  def test_explanation_ro_has_four_parts
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "ro").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "RO explanation should have 4 parts"
+  end
+
+  def test_best_time_nil_when_out_of_season
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 12)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    # Out of season has season_window_text as best_time
+    assert result[:best_time].include?("Wait") || result[:best_time].nil? || result[:best_time].include?("Așteaptă"),
+      "Out of season best_time should say 'Wait for...', got #{result[:best_time]}"
+  end
+
+  def test_boundary_temp_at_ideal_min
+    # Value exactly at ideal_min boundary
+    w = weather(temp: 8, rain: 20, days_since: 4, month: 4)  # morel ideal_min=8
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:breakdown][:temperature] >= 24,
+      "Temp at ideal_min should score high (floor=24), got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_boundary_temp_at_abs_min
+    # Value exactly at abs_min boundary — should score 1
+    w = weather(temp: 4, rain: 20, days_since: 4, month: 4)  # morel abs_min=4
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 1, result[:breakdown][:temperature],
+      "Temp at abs_min should score exactly 1, got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_boundary_temp_just_below_abs_min
+    # Value below abs_min — should score 0
+    w = weather(temp: 3, rain: 20, days_since: 4, month: 4)  # morel abs_min=4
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 0, result[:breakdown][:temperature],
+      "Temp below abs_min should score 0, got #{result[:breakdown][:temperature]}"
+  end
+
+  def test_zero_rain_with_zero_days_since
+    # Edge: no rain ever, days_since=0 (impossible in real life but test boundary)
+    w = weather(temp: 12, rain: 0, days_since: 0, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:score] >= 0, "Should handle zero rain + zero days gracefully"
+  end
 end

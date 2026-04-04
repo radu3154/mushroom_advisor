@@ -429,10 +429,10 @@ class LandCoverServiceTest < Minitest::Test
 
   # ── Overpass "other" terrain (residential, industrial, etc.) ──────────
 
-  def test_overpass_residential_returns_other
+  def test_overpass_residential_returns_actual_tag
     elements = [osm("landuse" => "residential")]
     result = LandCoverService.send(:parse_overpass_elements, elements)
-    assert_equal "other", result[:type]
+    assert_equal "residential", result[:type], "Should return actual tag, not 'other'"
     assert_equal "Residential", result[:label_en]
     assert_equal "Zonă rezidențială", result[:label_ro]
   end
@@ -440,7 +440,7 @@ class LandCoverServiceTest < Minitest::Test
   def test_overpass_sand_translated_to_romanian
     elements = [osm("natural" => "sand")]
     result = LandCoverService.send(:parse_overpass_elements, elements)
-    assert_equal "other", result[:type]
+    assert_equal "sand", result[:type], "Should return actual tag, not 'other'"
     assert_equal "Sand", result[:label_en]
     assert_equal "Nisip", result[:label_ro]
   end
@@ -448,7 +448,7 @@ class LandCoverServiceTest < Minitest::Test
   def test_overpass_quarry_translated_to_romanian
     elements = [osm("landuse" => "quarry")]
     result = LandCoverService.send(:parse_overpass_elements, elements)
-    assert_equal "other", result[:type]
+    assert_equal "quarry", result[:type], "Should return actual tag, not 'other'"
     assert_equal "Quarry", result[:label_en]
     assert_equal "Carieră", result[:label_ro]
   end
@@ -540,5 +540,148 @@ class LandCoverServiceTest < Minitest::Test
     key1 = LandCoverService.cache_key(45.59, 25.46)
     key2 = LandCoverService.cache_key(45.61, 25.48)
     refute_equal key1, key2
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Edge cases — Bug regression tests
+  # ══════════════════════════════════════════════════════════════════════
+
+  # BUG 2 regression: Overpass residential must return "residential" type
+  # so URBAN_TYPES check works in the controller.
+  def test_overpass_residential_type_matches_urban_types
+    elements = [osm("landuse" => "residential")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    require "set"
+    urban = Set.new(%w[residential industrial commercial retail construction
+                       quarry landfill military railway depot garages
+                       brownfield religious education])
+    assert urban.include?(result[:type]),
+      "Overpass residential should return type matchable by URBAN_TYPES, got '#{result[:type]}'"
+  end
+
+  def test_overpass_industrial_type_matches_urban_types
+    elements = [osm("landuse" => "industrial")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "industrial", result[:type]
+  end
+
+  def test_overpass_commercial_type_matches_urban_types
+    elements = [osm("landuse" => "commercial")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "commercial", result[:type]
+  end
+
+  def test_overpass_cemetery_returns_actual_tag
+    elements = [osm("landuse" => "cemetery")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "cemetery", result[:type]
+    assert_equal "Cimitir", result[:label_ro]
+  end
+
+  # detect() edge cases
+  def test_detect_nil_elevation_does_not_trigger_water
+    # Stub query_terrain to return unknown
+    LandCoverService.stub(:query_terrain, { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }) do
+      result = LandCoverService.detect(lat: 44.17, lon: 28.63, elevation: nil)
+      refute_equal "water", result[:type],
+        "nil elevation should NOT trigger water detection"
+    end
+  end
+
+  def test_detect_elevation_zero_triggers_water
+    result = LandCoverService.detect(lat: 44.0, lon: 28.0, elevation: 0)
+    assert_equal "water", result[:type]
+  end
+
+  def test_detect_negative_elevation_triggers_water
+    result = LandCoverService.detect(lat: 44.0, lon: 28.0, elevation: -10)
+    assert_equal "water", result[:type]
+  end
+
+  def test_detect_elevation_1_does_not_trigger_water
+    LandCoverService.stub(:query_terrain, { type: "unknown", label_en: "Unknown terrain", label_ro: "Teren nedetectat", source: "none" }) do
+      result = LandCoverService.detect(lat: 44.17, lon: 28.63, elevation: 1)
+      refute_equal "water", result[:type],
+        "elevation=1 should NOT trigger water override"
+    end
+  end
+
+  # Nominatim edge: empty hash
+  def test_nominatim_empty_hash_returns_nil
+    result = LandCoverService.send(:parse_nominatim_response, {})
+    assert_nil result
+  end
+
+  # Nominatim edge: class=boundary should not be urban
+  def test_nominatim_boundary_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("boundary", "administrative"))
+    assert_nil result, "Administrative boundaries should not be detected as urban"
+  end
+
+  # Nominatim edge: class=natural, type=tree should not match
+  def test_nominatim_single_tree_returns_nil
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("natural", "tree"))
+    assert_nil result, "A single tree is not meaningful terrain"
+  end
+
+  # Multiple Overpass elements: residential + forest → forest wins
+  def test_overpass_forest_beats_residential
+    elements = [
+      osm("landuse" => "residential"),
+      osm("landuse" => "forest", "leaf_type" => "needleleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "coniferous", result[:type],
+      "Forest should beat residential in priority ordering"
+  end
+
+  # All URBAN_TYPES from ScoringEngine should be detectable via Overpass
+  def test_all_urban_types_detectable_via_overpass
+    %w[residential industrial commercial retail construction quarry landfill
+       military railway depot garages brownfield religious education].each do |tag|
+      elements = [osm("landuse" => tag)]
+      result = LandCoverService.send(:parse_overpass_elements, elements)
+      assert_equal tag, result[:type],
+        "Overpass should return '#{tag}' as type for landuse=#{tag}, got '#{result[:type]}'"
+    end
+  end
+
+  # terrain_result with unknown type not in TERRAIN_LABELS or OTHER_LABELS_RO
+  def test_terrain_result_unknown_tag_uses_english_fallback
+    result = LandCoverService.send(:terrain_result, "some_weird_tag", "osm")
+    assert_equal "Some weird tag", result[:label_en]
+    assert_equal "Some weird tag", result[:label_ro], "Should fall back to English when no RO translation"
+  end
+
+  # Elevation boundary values
+  def test_elevation_1800_is_alpine
+    result = LandCoverService.send(:elevation_guess, 1800)
+    assert_equal "grassland", result[:type]
+    assert_equal "Alpine meadow", result[:label_en]
+  end
+
+  def test_elevation_1799_is_coniferous
+    result = LandCoverService.send(:elevation_guess, 1799)
+    assert_equal "coniferous", result[:type]
+  end
+
+  def test_elevation_1400_is_coniferous
+    result = LandCoverService.send(:elevation_guess, 1400)
+    assert_equal "coniferous", result[:type]
+  end
+
+  def test_elevation_1399_is_mixed
+    result = LandCoverService.send(:elevation_guess, 1399)
+    assert_equal "mixed", result[:type]
+  end
+
+  def test_elevation_400_is_deciduous
+    result = LandCoverService.send(:elevation_guess, 400)
+    assert_equal "deciduous", result[:type]
+  end
+
+  def test_elevation_399_returns_nil
+    result = LandCoverService.send(:elevation_guess, 399)
+    assert_nil result
   end
 end

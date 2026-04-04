@@ -61,7 +61,7 @@ class MushroomsController < ApplicationController
   def check_terrain
     lat = params[:lat].to_f
     lon = params[:lon].to_f
-    elevation = params[:elevation]&.to_f
+    elevation = params[:elevation].presence&.to_f
     species_key = params[:species]
     lang = %w[en ro].include?(params[:lang]) ? params[:lang] : "ro"
 
