@@ -437,6 +437,67 @@ class ScoringEngineTest < Minitest::Test
     assert_equal [3, 4, 5, 9, 10, 11, 12], species[:season_months]
   end
 
+  def test_oyster_peak_months
+    species = Species.find("oyster")
+    assert_equal [9, 10, 11, 12], species[:peak_months]
+  end
+
+  def test_oyster_april_secondary_season_score
+    # April is in season but NOT peak — should get reduced season score (~70%)
+    w = weather(temp: 12, rain: 25, days_since: 3, month: 4)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 21, result[:breakdown][:season],
+      "April secondary season should score 21/30, got #{result[:breakdown][:season]}"
+  end
+
+  def test_oyster_october_peak_season_score
+    # October is peak — should get full 30
+    w = weather(temp: 12, rain: 25, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_equal 30, result[:breakdown][:season],
+      "October peak season should score 30/30, got #{result[:breakdown][:season]}"
+  end
+
+  def test_oyster_peak_scores_higher_than_secondary
+    w = weather(temp: 12, rain: 25, days_since: 3)
+    april = ScoringEngine.new("oyster", w.merge(current_month: 4), lang: "en").call[:score]
+    october = ScoringEngine.new("oyster", w.merge(current_month: 10), lang: "en").call[:score]
+    assert october > april,
+      "October (peak) should score higher than April (secondary): #{october} vs #{april}"
+  end
+
+  def test_oyster_secondary_season_explanation_en
+    w = weather(temp: 12, rain: 25, days_since: 3, month: 4)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert_includes result[:explanation].downcase, "secondary season"
+  end
+
+  def test_oyster_secondary_season_explanation_ro
+    w = weather(temp: 12, rain: 25, days_since: 3, month: 4)
+    result = ScoringEngine.new("oyster", w, lang: "ro").call
+    assert_includes result[:explanation].downcase, "sezon secundar"
+  end
+
+  def test_morel_no_peak_months_all_peak
+    # Morel has no peak_months — all season months should get full score
+    species = Species.find("morel")
+    refute species.key?(:peak_months), "Morel should not define peak_months"
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert_equal 30, result[:breakdown][:season],
+      "Morel without peak_months should get full season score"
+  end
+
+  def test_oyster_rain_abs_max_allows_heavy_rain
+    # 77.8mm should NOT hard-kill anymore (abs_max now 80)
+    species = Species.find("oyster")
+    assert_equal 80, species[:rain_range][:abs_max]
+    w = weather(temp: 12, rain: 77, days_since: 3, month: 10)
+    result = ScoringEngine.new("oyster", w, lang: "en").call
+    assert result[:score] > 0,
+      "77mm rain should not kill oyster score (abs_max=80), got #{result[:score]}"
+  end
+
   def test_oyster_temp_range_includes_subfreezing
     species = Species.find("oyster")
     assert species[:temp_range][:abs_min] < 0, "Oyster abs_min should be below zero"

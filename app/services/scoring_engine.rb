@@ -162,8 +162,20 @@ class ScoringEngine
   end
 
   # --- Season ---
+  # Full points during peak months, 70% during secondary months (e.g. oyster spring flush).
+  # Species without peak_months treat all season months as peak.
+  SECONDARY_SEASON_RATIO = 0.70
+
   def score_season
-    @species[:season_months].include?(@weather[:current_month]) ? WEIGHTS[:season] : 0
+    month = @weather[:current_month]
+    return 0 unless @species[:season_months].include?(month)
+
+    peak = @species[:peak_months] || @species[:season_months]
+    if peak.include?(month)
+      WEIGHTS[:season]
+    else
+      (WEIGHTS[:season] * SECONDARY_SEASON_RATIO).round
+    end
   end
 
   # --- Temperature ---
@@ -322,12 +334,12 @@ class ScoringEngine
     parts = []
 
     if @lang == "ro"
-      parts << (scores[:season] >= WEIGHTS[:season] ? "sezon de vârf" : "în afara sezonului")
+      parts << season_explanation_ro(scores[:season])
       parts << temp_explanation_ro(temp, temp_range)
       parts << rain_explanation_ro(rain_mm, rain_range)
       parts << timing_explanation_ro(days, delay)
     else
-      parts << (scores[:season] >= WEIGHTS[:season] ? "peak season" : "out of season")
+      parts << season_explanation_en(scores[:season])
       parts << temp_explanation_en(temp, temp_range)
       parts << rain_explanation_en(rain_mm, rain_range)
       parts << timing_explanation_en(days, delay)
@@ -419,6 +431,26 @@ class ScoringEngine
       "too soon after rain (#{days} #{zile(days)})"
     else
       "too long since rain (#{days} #{zile(days)})"
+    end
+  end
+
+  def season_explanation_en(season_score)
+    if season_score >= WEIGHTS[:season]
+      "peak season"
+    elsif season_score > 0
+      "secondary season"
+    else
+      "out of season"
+    end
+  end
+
+  def season_explanation_ro(season_score)
+    if season_score >= WEIGHTS[:season]
+      "sezon de vârf"
+    elsif season_score > 0
+      "sezon secundar"
+    else
+      "în afara sezonului"
     end
   end
 end

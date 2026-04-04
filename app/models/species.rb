@@ -467,11 +467,13 @@ class Species
       description_ro: "Supraviețuitorul toamnei și iernii, în formă de scoică. Păstrăvul de fag crește în grupuri pe lemn mort de fag, stejar și plop — și poate fructifica chiar și după primele înghețuri.",
       season_months: [3, 4, 5, 9, 10, 11, 12],
       temp_range: { ideal_min: 8, ideal_max: 20, abs_min: -2, abs_max: 26 },
-      rain_range: { ideal_min: 10, ideal_max: 40, abs_min: 3, abs_max: 60 },
+      rain_range: { ideal_min: 10, ideal_max: 40, abs_min: 3, abs_max: 80 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 8 },
       # Oyster mushrooms respond quickly to cold snaps.
       # 5-day average captures the autumn temperature drops that trigger fruiting.
       temp_window: 5,
+      # Primary flush is autumn/winter; spring is secondary (lighter yields).
+      peak_months: [9, 10, 11, 12],
       # Strict wood-decomposer: needs forests with deadwood. Parks OK (fallen branches).
       preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "scrubland", "park", "wetland"], bad: ["grassland", "farmland", "orchard", "water"] },
       tips: [
