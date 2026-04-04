@@ -422,6 +422,17 @@ class LandCoverService
     nil
   end
 
+  # Nominatim classes that imply an urban/built environment.
+  # If we see one of these, the user is in a city — not in nature.
+  URBAN_CLASSES = Set.new(%w[
+    building highway shop amenity office tourism craft
+    man_made railway aeroway power
+  ]).freeze
+
+  URBAN_PLACE_TYPES = Set.new(%w[
+    city town suburb quarter neighbourhood borough village hamlet
+  ]).freeze
+
   def self.parse_nominatim_response(data)
     return nil if data.nil? || data.empty? || data["error"]
 
@@ -444,6 +455,15 @@ class LandCoverService
 
     if osm_class == "leisure" && %w[park garden nature_reserve].include?(osm_type)
       return terrain_result("park", "nominatim")
+    end
+
+    # Detect urban areas — buildings, roads, shops, etc. mean the user
+    # is in a city/town. Many Romanian cities (Constanța, Brașov suburbs, etc.)
+    # lack explicit landuse=residential polygons in OSM, so Overpass finds nothing.
+    # Nominatim still returns the nearest building or road though.
+    if URBAN_CLASSES.include?(osm_class) || (osm_class == "place" && URBAN_PLACE_TYPES.include?(osm_type))
+      return { type: "residential", label_en: "Residential area",
+               label_ro: "Zonă rezidențială", source: "nominatim" }
     end
 
     nil  # Not terrain-relevant — return nil so orchestrator falls through

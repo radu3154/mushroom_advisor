@@ -256,9 +256,40 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "park", result[:type]
   end
 
-  def test_nominatim_road_returns_nil
+  def test_nominatim_road_detects_urban
     result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "residential"))
-    assert_nil result, "Non-terrain features should return nil"
+    assert_equal "residential", result[:type]
+    assert_equal "nominatim", result[:source]
+  end
+
+  def test_nominatim_building_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("building", "apartments"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_shop_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("shop", "supermarket"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_amenity_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("amenity", "school"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_place_city_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("place", "city"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_place_village_detects_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("place", "village"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_place_country_returns_nil
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("place", "country"))
+    assert_nil result, "Country-level place should return nil"
   end
 
   def test_nominatim_error_returns_nil

@@ -86,8 +86,8 @@ class MushroomsController < ApplicationController
       match_text: match_text,
       is_water: is_water,
       is_urban: is_urban,
-      water_message: is_water ? (I18nHelper.t(:water_warning, lang) || (lang == "ro" ? "Ești pe apă! Ciupercile nu cresc aici." : "You're on water! Mushrooms don't grow here.")) : nil,
-      urban_message: is_urban ? (lang == "ro" ? "Aici nu cresc ciuperci — mută pinul spre o pădure sau pajiște." : "No mushrooms here — try moving the pin to a forest or meadow.") : nil
+      water_message: is_water ? (lang == "ro" ? "Pinul e pe apă. Mută-l pe uscat pentru rezultate." : "Pin is on water. Move it to dry land for results.") : nil,
+      urban_message: is_urban ? (lang == "ro" ? "Zonă urbană — mută pinul spre o pădure sau pajiște." : "Urban area — try moving the pin to a forest or meadow.") : nil
     }
   rescue => e
     Rails.logger.error "CheckTerrain error: #{e.message}"

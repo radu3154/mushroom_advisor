@@ -55,33 +55,34 @@
     <% end %>
   </div>
 
-  <!-- Check Terrain button (AJAX — lazy load on click) -->
+  <!-- Check Terrain button (AJAX popup) -->
   <% unless tier == :"out-of-season" || tier == "out-of-season" %>
     <div class="terrain-check" style="margin: 1rem 0;">
       <button type="button" class="terrain-toggle-btn" id="terrain-btn" onclick="checkTerrain()">
         <%= IconHelper.icon(:map_pin).html_safe %> <%= I18nHelper.t(:check_terrain, @lang) %>
       </button>
-      <div id="terrain-detail" class="hidden terrain-detail-box">
-        <p id="terrain-loading" style="margin: 0.5rem 0; color: #999; font-size: 0.9rem;">
+      <div id="terrain-popup" class="hidden terrain-popup">
+        <p id="terrain-loading" style="margin: 0; color: #c8d0b8; font-size: 0.88rem;">
           <% if @lang == "ro" %>Se detectează terenul…<% else %>Detecting terrain…<% end %>
         </p>
         <div id="terrain-result" class="hidden">
-          <p id="terrain-label-text" style="margin: 0.5rem 0 0.25rem; font-weight: 600; color: #555;"></p>
-          <p id="terrain-match-text" style="margin: 0; font-size: 0.9rem;"></p>
+          <p id="terrain-label-text" style="margin: 0 0 0.2rem; font-weight: 600; font-size: 0.95rem;"></p>
+          <p id="terrain-match-text" style="margin: 0; font-size: 0.88rem; line-height: 1.4;"></p>
         </div>
       </div>
     </div>
     <script>
       var terrainLoaded = false;
       function checkTerrain() {
-        var detail = document.getElementById('terrain-detail');
-        // If already loaded, just toggle visibility
+        var popup = document.getElementById('terrain-popup');
+        // If already loaded, toggle popup
         if (terrainLoaded) {
-          detail.classList.toggle('hidden');
+          popup.classList.toggle('hidden');
           return;
         }
-        // Show loading
-        detail.classList.remove('hidden');
+        // Show loading popup with entrance animation
+        popup.classList.remove('hidden');
+        popup.classList.add('animate-in');
         document.getElementById('terrain-loading').classList.remove('hidden');
         document.getElementById('terrain-result').classList.add('hidden');
         document.getElementById('terrain-btn').disabled = true;
@@ -99,25 +100,28 @@
             document.getElementById('terrain-loading').classList.add('hidden');
             document.getElementById('terrain-btn').disabled = false;
 
+            var labelEl = document.getElementById('terrain-label-text');
+            var matchEl = document.getElementById('terrain-match-text');
+
             if (data.is_water) {
-              document.getElementById('terrain-label-text').textContent = data.terrain_label;
-              document.getElementById('terrain-match-text').textContent = data.water_message;
-              document.getElementById('terrain-match-text').style.color = '#c44';
+              labelEl.textContent = data.terrain_label;
+              matchEl.textContent = data.water_message;
+              matchEl.style.color = '#a0c0d0';
             } else if (data.is_urban) {
-              document.getElementById('terrain-label-text').textContent = data.terrain_label;
-              document.getElementById('terrain-match-text').textContent = data.urban_message;
-              document.getElementById('terrain-match-text').style.color = '#c44';
+              labelEl.textContent = data.terrain_label;
+              matchEl.textContent = data.urban_message;
+              matchEl.style.color = '#dac090';
             } else if (data.error) {
-              document.getElementById('terrain-label-text').textContent = data.terrain_label || 'Error';
-              document.getElementById('terrain-match-text').textContent = '';
+              labelEl.textContent = data.terrain_label || 'Error';
+              matchEl.textContent = '';
             } else {
-              document.getElementById('terrain-label-text').textContent = data.terrain_label;
-              document.getElementById('terrain-match-text').textContent = data.match_text;
+              labelEl.textContent = data.terrain_label;
+              matchEl.textContent = data.match_text;
               var match = data.terrain_match;
-              document.getElementById('terrain-match-text').style.color =
-                match === 'ideal' ? '#2a7a2a' :
-                match === 'partial' ? '#b8860b' :
-                match === 'bad' ? '#c44' : '#999';
+              matchEl.style.color =
+                match === 'ideal' ? '#90e890' :
+                match === 'partial' ? '#e8d080' :
+                match === 'bad' ? '#e8a090' : '#b8c0a8';
             }
             document.getElementById('terrain-result').classList.remove('hidden');
             terrainLoaded = true;
@@ -132,6 +136,15 @@
             terrainLoaded = true;
           });
       }
+      // Close popup when clicking outside
+      document.addEventListener('click', function(e) {
+        var popup = document.getElementById('terrain-popup');
+        var btn = document.getElementById('terrain-btn');
+        if (terrainLoaded && popup && !popup.classList.contains('hidden') &&
+            !popup.contains(e.target) && !btn.contains(e.target)) {
+          popup.classList.add('hidden');
+        }
+      });
     </script>
   <% end %>
 
@@ -149,9 +162,22 @@
   <div class="info-section">
     <h3><%= I18nHelper.t(:what_data_says, @lang) %></h3>
     <p style="font-size: 1.05rem; color: #555; line-height: 1.7;"><%= @result[:explanation] %></p>
+    <%
+      weather_ro = {
+        "clear sky" => "cer senin", "mainly clear" => "predominant senin",
+        "partly cloudy" => "parțial noros", "overcast" => "înnorat",
+        "foggy" => "ceață", "drizzle" => "burniță",
+        "freezing drizzle" => "burniță înghețată", "rain" => "ploaie",
+        "freezing rain" => "ploaie înghețată", "snowfall" => "ninsoare",
+        "snow grains" => "grăunțe de zăpadă", "rain showers" => "averse de ploaie",
+        "snow showers" => "averse de ninsoare", "thunderstorm" => "furtună",
+        "thunderstorm with hail" => "furtună cu grindină", "unknown" => "necunoscut"
+      }
+    %>
     <% if @result[:weather].present? %>
+      <% weather_desc = @lang == "ro" ? (weather_ro[@result[:weather][:description]] || @result[:weather][:description]) : @result[:weather][:description] %>
       <p class="weather-note">
-        <%= I18nHelper.t(:currently, @lang) %> <%= @result[:weather][:description] %>,
+        <%= I18nHelper.t(:currently, @lang) %> <%= weather_desc %>,
         <%= @result[:weather][:current_temp] %>&deg;C,
         <%= I18nHelper.t(:humidity, @lang) %> <%= @result[:weather][:humidity] %>%
         <% if @result[:weather_stats][:elevation] %>
