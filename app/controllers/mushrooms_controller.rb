@@ -57,6 +57,7 @@ class MushroomsController < ApplicationController
     params[:terrain_label_ro] = land_cover[:label_ro]
 
     terrain_label = @lang == "ro" ? land_cover[:label_ro] : land_cover[:label_en]
+    terrain_match = ScoringEngine.terrain_match(species_key, land_cover[:type])
 
     @result = result.merge(
       species_name: Species.localized(species_info, :name, @lang),
@@ -65,6 +66,7 @@ class MushroomsController < ApplicationController
       location_name: location_name,
       land_cover: land_cover,
       terrain_label: terrain_label,
+      terrain_match: terrain_match,
       weather_stats: {
         avg_temp: weather_data[:avg_temp],
         total_rain: weather_data[:total_rain_7d],

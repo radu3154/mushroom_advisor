@@ -23,24 +23,20 @@
     </span>
   </div>
 
-  <!-- Score Breakdown -->
+  <!-- Score Breakdown (4 factors — no habitat) -->
   <div class="breakdown">
-    <% max_scores = @result[:breakdown].key?(:habitat) ?
-         { season: 25, temperature: 25, rain: 25, habitat: 15, timing: 10 } :
-         { season: 30, temperature: 30, rain: 30, timing: 10 } %>
+    <% max_scores = { season: 30, temperature: 30, rain: 30, timing: 10 } %>
     <% stats = @result[:weather_stats] || {} %>
     <% breakdown_labels = {
       season: I18nHelper.t(:season, @lang),
       temperature: I18nHelper.t(:temperature, @lang),
       rain: I18nHelper.t(:rain, @lang),
-      habitat: I18nHelper.t(:habitat_label, @lang),
       timing: I18nHelper.t(:timing, @lang)
     } %>
     <% detail_labels = {
       season: "#{@lang == 'ro' ? ScoringEngine::MONTH_NAMES_RO[Date.today.month] : Date::MONTHNAMES[Date.today.month]}",
       temperature: stats[:avg_temp] ? "#{stats[:avg_temp]}°C avg" : nil,
       rain: stats[:total_rain] ? "#{stats[:total_rain]}mm / 7 #{@lang == 'ro' ? 'zile' : 'days'}" : nil,
-      habitat: @result[:terrain_label],
       timing: stats[:days_since_rain] ? "#{stats[:days_since_rain]} #{stats[:days_since_rain] == 1 ? (@lang == 'ro' ? 'zi de la ploaie' : 'day since rain') : (@lang == 'ro' ? 'zile de la ploaie' : 'days since rain')}" : nil
     } %>
     <% @result[:breakdown].each do |key, value| %>
@@ -57,12 +53,25 @@
         </div>
       </div>
     <% end %>
-    <% unless @result[:breakdown].key?(:habitat) %>
-      <p style="font-size: 0.8rem; color: #bbb; margin: 0.5rem 0 0; text-align: right;">
-        <%= @lang == "ro" ? "Tipul de teren nu a putut fi detectat" : "Terrain type could not be detected" %>
-      </p>
-    <% end %>
   </div>
+
+  <!-- Check Terrain button (doesn't affect score) -->
+  <% if @result[:terrain_label] && !@result[:on_water] && !@result[:on_urban] && !@result[:out_of_season] && @result[:land_cover] && @result[:land_cover][:type] != "unknown" %>
+    <div class="terrain-check" style="margin: 1rem 0;">
+      <button type="button" class="terrain-toggle-btn" onclick="document.getElementById('terrain-detail').classList.toggle('hidden')">
+        <%= IconHelper.icon(:map_pin).html_safe %> <%= I18nHelper.t(:check_terrain, @lang) %>
+      </button>
+      <div id="terrain-detail" class="hidden terrain-detail-box">
+        <p style="margin: 0.5rem 0 0.25rem; font-weight: 600; color: #555;">
+          <%= @result[:terrain_label] %>
+        </p>
+        <% match = @result[:terrain_match] %>
+        <p style="margin: 0; font-size: 0.9rem; color: <%= match == :ideal ? '#2a7a2a' : match == :partial ? '#b8860b' : match == :bad ? '#c44' : '#999' %>;">
+          <%= I18nHelper.t(:"terrain_#{match}", @lang) %>
+        </p>
+      </div>
+    </div>
+  <% end %>
 
   <!-- Best Time -->
   <% if @result[:best_time] %>
@@ -107,17 +116,7 @@
     <% end %>
   </div>
 
-  <!-- Where to Look -->
-  <div class="info-section">
-    <h3><%= I18nHelper.t(:where_to_look, @lang) %></h3>
-    <ul class="info-list">
-      <% @result[:habitat].each do |spot| %>
-        <li><%= spot.html_safe %></li>
-      <% end %>
-    </ul>
-  </div>
-
-  <!-- Tips -->
+  <!-- Foraging Tips (merged habitat + tips) -->
   <div class="info-section">
     <h3><%= I18nHelper.t(:foraging_tips, @lang) %></h3>
     <ul class="info-list tips">

@@ -29,6 +29,11 @@ class I18nHelper
       rain: "Rain",
       timing: "Timing",
       habitat_label: "Terrain",
+      check_terrain: "Check terrain",
+      terrain_ideal: "Great terrain for this species!",
+      terrain_partial: "Acceptable terrain — not ideal, but possible.",
+      terrain_bad: "Wrong terrain for this species.",
+      terrain_unknown: "Terrain compatibility unknown.",
       days_since_rain: "days since rain"
     },
     "ro" => {
@@ -60,6 +65,11 @@ class I18nHelper
       rain: "Ploaie",
       timing: "Timp",
       habitat_label: "Teren",
+      check_terrain: "Verifică terenul",
+      terrain_ideal: "Teren excelent pentru această specie!",
+      terrain_partial: "Teren acceptabil — nu ideal, dar posibil.",
+      terrain_bad: "Teren nepotrivit pentru această specie.",
+      terrain_unknown: "Compatibilitatea terenului necunoscută.",
       days_since_rain: "zile de la ploaie"
     }
   }.freeze

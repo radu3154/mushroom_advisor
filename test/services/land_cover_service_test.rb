@@ -457,11 +457,11 @@ class LandCoverServiceTest < Minitest::Test
   end
 
   # ══════════════════════════════════════════════════════════════════════
-  # run_overpass_query — shared Overpass executor
+  # Overpass query parsing
   # ══════════════════════════════════════════════════════════════════════
 
-  def test_run_overpass_query_returns_nil_on_empty
-    # Simulating: run_overpass_query would call parse_overpass_elements([])
+  def test_empty_elements_returns_unknown
+    # parse_overpass_elements([]) returns unknown when no elements found
     result = LandCoverService.send(:parse_overpass_elements, [])
     assert_equal "unknown", result[:type]
   end

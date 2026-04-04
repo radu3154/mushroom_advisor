@@ -15,30 +15,22 @@ class Species
       temp_window: 7,
       # Terrain scoring: ideal types get max, partial gets half, bad gets 0
       preferred_terrain: { ideal: ["deciduous", "grassland", "orchard"], partial: ["mixed", "scrubland", "farmland", "park"], bad: ["coniferous", "water"] },
-      habitat: [
-        "#{IconHelper.icon(:apple)} Old apple and pear orchards",
-        "#{IconHelper.icon(:tree_deciduous)} Near ash, elm, and tulip poplar trees",
-        "#{IconHelper.icon(:fire)} Disturbed soil and burn sites",
-        "#{IconHelper.icon(:sun)} South-facing slopes with morning sun",
-        "#{IconHelper.icon(:droplet)} Sandy loam soils with good drainage"
-      ],
-      habitat_ro: [
-        "#{IconHelper.icon(:apple)} Livezi vechi de meri și peri",
-        "#{IconHelper.icon(:tree_deciduous)} Lângă frăsini, ulmi și plopi",
-        "#{IconHelper.icon(:fire)} Sol deranjat și zone arse",
-        "#{IconHelper.icon(:sun)} Versanți cu expunere sudică și soare dimineața",
-        "#{IconHelper.icon(:droplet)} Soluri nisipoase cu drenaj bun"
-      ],
       tips: [
+        "#{IconHelper.icon(:apple)} Old apple and pear orchards are prime spots",
+        "#{IconHelper.icon(:tree_deciduous)} Look near ash, elm, and tulip poplar trees",
+        "#{IconHelper.icon(:sun)} South-facing slopes with morning sun and sandy loam",
         "#{IconHelper.icon(:rain_heavy)} Check 3-5 days after a good spring rain",
-        "#{IconHelper.icon(:blossom)} Look when lilacs bloom and soil hits 10C",
-        "#{IconHelper.icon(:fire)} Burn sites from the previous year are gold",
+        "#{IconHelper.icon(:blossom)} Look when lilacs bloom and soil hits 10°C",
+        "#{IconHelper.icon(:fire)} Burn sites and disturbed soil from last year are gold",
         "#{IconHelper.icon(:sunrise)} Early morning light makes them easier to spot"
       ],
       tips_ro: [
+        "#{IconHelper.icon(:apple)} Livezile vechi de meri și peri sunt locuri ideale",
+        "#{IconHelper.icon(:tree_deciduous)} Caută lângă frăsini, ulmi și plopi",
+        "#{IconHelper.icon(:sun)} Versanți sudici cu soare dimineața și sol nisipos",
         "#{IconHelper.icon(:rain_heavy)} Verifică la 3-5 zile după o ploaie bună de primăvară",
         "#{IconHelper.icon(:blossom)} Caută când înfloresc liliacul și solul atinge 10°C",
-        "#{IconHelper.icon(:fire)} Zonele arse din anul precedent sunt de aur",
+        "#{IconHelper.icon(:fire)} Zonele arse și solul deranjat din anul trecut sunt de aur",
         "#{IconHelper.icon(:sunrise)} Lumina dimineții le face mai ușor de observat"
       ],
       color: "#8B6914",
@@ -174,31 +166,21 @@ class Species
       temp_window: 5,
       # Boletus thrives in mixed forests, fine in both pure types, less in grassland
       preferred_terrain: { ideal: ["mixed", "deciduous", "coniferous"], partial: ["grassland", "orchard", "scrubland", "park"], bad: ["farmland", "water"] },
-      habitat: [
-        "#{IconHelper.icon(:mixed_forest)} Mixed conifer and deciduous forests",
-        "#{IconHelper.icon(:tree_deciduous)} Under oak, spruce, pine, and birch trees",
-        "#{IconHelper.icon(:moss)} Mossy forest floors with dappled shade",
-        "#{IconHelper.icon(:clearing)} Edges of forest clearings",
-        "#{IconHelper.icon(:fallen_leaf)} Well-drained slopes with leaf litter"
-      ],
-      habitat_ro: [
-        "#{IconHelper.icon(:mixed_forest)} Păduri mixte de conifere și foioase",
-        "#{IconHelper.icon(:tree_deciduous)} Sub stejari, molizi, pini și mesteceni",
-        "#{IconHelper.icon(:moss)} Podeaua pădurii cu mușchi și umbră",
-        "#{IconHelper.icon(:clearing)} Marginile poienilor",
-        "#{IconHelper.icon(:fallen_leaf)} Versanți cu drenaj bun și frunze căzute"
-      ],
       tips: [
+        "#{IconHelper.icon(:mixed_forest)} Mixed forests — under oak, spruce, pine, birch",
+        "#{IconHelper.icon(:moss)} Mossy forest floors with dappled shade",
+        "#{IconHelper.icon(:clearing)} Forest clearings and well-drained slopes with leaf litter",
         "#{IconHelper.icon(:storm)} Best 5-10 days after sustained summer rain",
         "#{IconHelper.icon(:fog)} Warm humid mornings are ideal hunting time",
-        "#{IconHelper.icon(:map_pin)} Return to known spots -- porcini are loyal",
-        "#{IconHelper.icon(:tree_conifer)} Check under older trees with thick canopy"
+        "#{IconHelper.icon(:map_pin)} Return to known spots — porcini are loyal"
       ],
       tips_ro: [
+        "#{IconHelper.icon(:mixed_forest)} Păduri mixte — sub stejari, molizi, pini, mesteceni",
+        "#{IconHelper.icon(:moss)} Podeaua pădurii cu mușchi și umbră",
+        "#{IconHelper.icon(:clearing)} Poieni și versanți cu drenaj bun și frunze căzute",
         "#{IconHelper.icon(:storm)} Cel mai bine la 5-10 zile după ploaie de vară",
         "#{IconHelper.icon(:fog)} Diminețile calde și umede sunt ideale",
-        "#{IconHelper.icon(:map_pin)} Revino la locurile cunoscute — hribii sunt fideli",
-        "#{IconHelper.icon(:tree_conifer)} Verifică sub copacii bătrâni cu coroană deasă"
+        "#{IconHelper.icon(:map_pin)} Revino la locurile cunoscute — hribii sunt fideli"
       ],
       color: "#8B4513",
       gradient_from: "#6b3410",
@@ -333,27 +315,19 @@ class Species
       temp_window: 7,
       # Chanterelles love deciduous/mixed forests, ok in coniferous, rare in grassland
       preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "scrubland", "park"], bad: ["grassland", "orchard", "farmland", "water"] },
-      habitat: [
-        "#{IconHelper.icon(:moss)} Mossy hardwood and mixed forests",
-        "#{IconHelper.icon(:tree_deciduous)} Near oak, beech, and birch trees",
-        "#{IconHelper.icon(:droplet)} Damp, shaded ravines and stream banks",
-        "#{IconHelper.icon(:trail)} Paths and trails through old-growth forest",
-        "#{IconHelper.icon(:fern)} Under blueberry and fern cover"
-      ],
-      habitat_ro: [
-        "#{IconHelper.icon(:moss)} Păduri de foioase și mixte cu mușchi",
-        "#{IconHelper.icon(:tree_deciduous)} Lângă stejari, fagi și mesteceni",
-        "#{IconHelper.icon(:droplet)} Ravene umede și maluri de pâraie",
-        "#{IconHelper.icon(:trail)} Poteci prin păduri bătrâne",
-        "#{IconHelper.icon(:fern)} Sub afini și ferigi"
-      ],
       tips: [
+        "#{IconHelper.icon(:moss)} Mossy hardwood and mixed forests, near oak, beech, birch",
+        "#{IconHelper.icon(:droplet)} Damp, shaded ravines and stream banks",
+        "#{IconHelper.icon(:fern)} Under blueberry and fern cover",
         "#{IconHelper.icon(:umbrella)} Look 2-5 days after warm summer rain",
-        "#{IconHelper.icon(:moss)} Follow moss trails -- chanterelles love moss",
+        "#{IconHelper.icon(:moss)} Follow moss trails — chanterelles love moss",
         "#{IconHelper.icon(:sparkle)} Their golden color pops on rainy mornings",
-        "#{IconHelper.icon(:hand_pick)} Gently twist and pull, don't cut -- they regrow"
+        "#{IconHelper.icon(:hand_pick)} Gently twist and pull, don't cut — they regrow"
       ],
       tips_ro: [
+        "#{IconHelper.icon(:moss)} Păduri de foioase și mixte cu mușchi, lângă stejari, fagi, mesteceni",
+        "#{IconHelper.icon(:droplet)} Ravene umede și maluri de pâraie",
+        "#{IconHelper.icon(:fern)} Sub afini și ferigi",
         "#{IconHelper.icon(:umbrella)} Caută la 2-5 zile după ploaie caldă de vară",
         "#{IconHelper.icon(:moss)} Urmează cărările cu mușchi — gălbiorii adoră mușchiul",
         "#{IconHelper.icon(:sparkle)} Culoarea lor aurie se vede bine în dimineți ploioase",

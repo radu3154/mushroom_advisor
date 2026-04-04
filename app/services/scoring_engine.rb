@@ -3,10 +3,12 @@ require "set"
 
 class ScoringEngine
   # Scores a species against current weather data.
-  # Returns a hash with :score, :label, :best_time, :explanation, :habitat
+  # Returns a hash with :score, :label, :best_time, :explanation, :tips
   #
-  # weather_data shape:
-  #   { avg_temp:, total_rain_7d:, days_since_rain:, current_month: }
+  # Scoring is purely weather-based (4 factors):
+  #   Season 30 + Temperature 30 + Rain 30 + Timing 10 = 100
+  #
+  # Terrain is NOT scored — it's shown separately via a "Check terrain" button.
 
   # tier is always English (for CSS), label/message are localized
   LABELS = {
@@ -51,86 +53,61 @@ class ScoringEngine
   MONTH_NAMES_RO = [nil, "Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
                     "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"].freeze
 
-  # With habitat:    Season 25 + Temperature 25 + Rain 25 + Habitat 15 + Timing 10 = 100
-  # Without habitat: Season 30 + Temperature 30 + Rain 30 + Timing 10 = 100
-  WEIGHTS_WITH_HABITAT    = { season: 25, temperature: 25, rain: 25, habitat: 15, timing: 10 }.freeze
-  WEIGHTS_WITHOUT_HABITAT = { season: 30, temperature: 30, rain: 30, timing: 10 }.freeze
+  # 4-factor weights: Season 30 + Temperature 30 + Rain 30 + Timing 10 = 100
+  WEIGHTS = { season: 30, temperature: 30, rain: 30, timing: 10 }.freeze
 
   def initialize(species_key, weather_data, lang: "en", land_cover: nil)
     @species = Species.find(species_key)
     @weather = weather_data
     @lang = lang
     @land_cover = land_cover || { type: "unknown" }
-    @terrain_known = @land_cover[:type] != "unknown"
-    @weights = @terrain_known ? WEIGHTS_WITH_HABITAT : WEIGHTS_WITHOUT_HABITAT
     raise ArgumentError, "Unknown species: #{species_key}" unless @species
   end
 
   def call
+    # --- Water skip ---
     if @land_cover[:type] == "water"
       wl = WATER_LABELS[@lang] || WATER_LABELS["en"]
-      return {
-        score: 0,
-        breakdown: { season: 0, temperature: 0, rain: 0, habitat: 0, timing: 0 },
-        tier: wl[:tier],
-        label: wl[:label],
-        message: wl[:message],
-        on_water: true,
-        best_time: nil,
-        explanation: @lang == "ro" ? "Ai plasat pinul pe apă. Mută-l pe uscat!" : "You pinned on water. Move the pin to dry land!",
-        habitat: Species.localized(@species, :habitat, @lang),
-        tips: Species.localized(@species, :tips, @lang)
-      }
+      return skip_result(wl, on_water: true,
+        explanation: @lang == "ro" ? "Ai plasat pinul pe apă. Mută-l pe uscat!" : "You pinned on water. Move the pin to dry land!")
     end
 
+    # --- Urban skip ---
     if URBAN_TYPES.include?(@land_cover[:type])
       ul = URBAN_LABELS[@lang] || URBAN_LABELS["en"]
       terrain_label = @lang == "ro" ? @land_cover[:label_ro] : @land_cover[:label_en]
-      return {
-        score: 0,
-        breakdown: { season: 0, temperature: 0, rain: 0, habitat: 0, timing: 0 },
-        tier: ul[:tier],
-        label: ul[:label],
-        message: ul[:message],
-        on_urban: true,
-        best_time: nil,
+      return skip_result(ul, on_urban: true,
         explanation: @lang == "ro" ?
           "Ai plasat pinul pe #{terrain_label&.downcase || 'zonă urbană'}. Mută-l spre natură!" :
-          "You pinned on #{terrain_label&.downcase || 'urban area'}. Move the pin to nature!",
-        habitat: Species.localized(@species, :habitat, @lang),
-        tips: Species.localized(@species, :tips, @lang)
-      }
+          "You pinned on #{terrain_label&.downcase || 'urban area'}. Move the pin to nature!")
     end
 
+    # --- Out of season ---
     unless in_season?
       oos = OUT_OF_SEASON_LABELS[@lang] || OUT_OF_SEASON_LABELS["en"]
       species_name = Species.localized(@species, :name, @lang)
-      breakdown = { season: 0, temperature: 0, rain: 0, timing: 0 }
-      breakdown[:habitat] = 0 if @terrain_known
       return {
         score: 0,
-        breakdown: breakdown,
+        breakdown: { season: 0, temperature: 0, rain: 0, timing: 0 },
         tier: oos[:tier],
         label: oos[:label],
         message: oos[:message],
         out_of_season: true,
         best_time: season_window_text,
         explanation: out_of_season_explanation(species_name),
-        habitat: Species.localized(@species, :habitat, @lang),
         tips: Species.localized(@species, :tips, @lang)
       }
     end
 
+    # --- Score 4 factors ---
     scores = {
       season: score_season,
       temperature: score_temperature,
       rain: score_rain,
       timing: score_timing
     }
-    scores[:habitat] = score_habitat if @terrain_known
 
     # If temperature OR rain is completely outside the absolute range, nothing grows.
-    # Both are hard biological constraints — no warmth or no moisture = no fruiting.
     total = if (scores[:temperature] == 0 && out_of_abs_range?(:temp)) ||
                (scores[:rain] == 0 && out_of_abs_range?(:rain))
               0
@@ -148,50 +125,64 @@ class ScoringEngine
       message: label_info[:message],
       best_time: show_best_time?(total, scores) ? compute_best_time : nil,
       explanation: build_explanation(scores, @weather),
-      habitat: Species.localized(@species, :habitat, @lang),
       tips: Species.localized(@species, :tips, @lang)
     }
   end
 
+  # Terrain compatibility check — called from the controller for the
+  # "Check terrain" button, not part of the score.
+  def self.terrain_match(species_key, terrain_type)
+    species = Species.find(species_key)
+    return :unknown unless species
+    prefs = species[:preferred_terrain] || { ideal: [], partial: [], bad: [] }
+
+    if prefs[:ideal].include?(terrain_type)
+      :ideal
+    elsif prefs[:partial].include?(terrain_type)
+      :partial
+    elsif prefs[:bad].include?(terrain_type)
+      :bad
+    else
+      :unknown
+    end
+  end
+
   private
+
+  def skip_result(labels, extra = {})
+    {
+      score: 0,
+      breakdown: { season: 0, temperature: 0, rain: 0, timing: 0 },
+      tier: labels[:tier],
+      label: labels[:label],
+      message: labels[:message],
+      best_time: nil,
+      tips: Species.localized(@species, :tips, @lang)
+    }.merge(extra)
+  end
 
   # --- Season ---
   def score_season
-    @species[:season_months].include?(@weather[:current_month]) ? @weights[:season] : 0
+    @species[:season_months].include?(@weather[:current_month]) ? WEIGHTS[:season] : 0
   end
 
   # --- Temperature ---
   def score_temperature
-    score_range_smooth(@weather[:avg_temp], @species[:temp_range], @weights[:temperature])
+    score_range_smooth(@weather[:avg_temp], @species[:temp_range], WEIGHTS[:temperature])
   end
 
   # --- Rain last 7 days ---
   def score_rain
-    score_range_smooth(@weather[:total_rain_7d], @species[:rain_range], @weights[:rain])
-  end
-
-  # --- Habitat / terrain type (0–15) --- only called when terrain is known
-  def score_habitat
-    terrain_type = @land_cover[:type]
-    prefs = @species[:preferred_terrain] || { ideal: [], partial: [], bad: [] }
-
-    if prefs[:ideal].include?(terrain_type)
-      @weights[:habitat]
-    elsif prefs[:partial].include?(terrain_type)
-      (@weights[:habitat] * 0.5).round
-    else
-      0
-    end
+    score_range_smooth(@weather[:total_rain_7d], @species[:rain_range], WEIGHTS[:rain])
   end
 
   # --- Timing after rain (0–10) ---
   def score_timing
-    score_range_smooth(@weather[:days_since_rain], @species[:delay_days], @weights[:timing])
+    score_range_smooth(@weather[:days_since_rain], @species[:delay_days], WEIGHTS[:timing])
   end
 
   # Scoring for a value within a range spec.
   # Ideal range is treated as genuinely good — the whole range scores 80-100%.
-  # Mushrooms don't have a single "perfect" temp; the entire ideal range works.
   # Marginal zone: gradient from just below floor near ideal edge → 1 at abs edge.
   # Outside abs → 0.
   IDEAL_FLOOR_RATIO = 0.80
@@ -200,7 +191,6 @@ class ScoringEngine
     floor = (max_score * IDEAL_FLOOR_RATIO).round
 
     if value.between?(range[:ideal_min], range[:ideal_max])
-      # Inside ideal range: gradient from floor at edges to max_score at center
       center = (range[:ideal_min] + range[:ideal_max]) / 2.0
       half_width = (range[:ideal_max] - range[:ideal_min]) / 2.0
       if half_width == 0
@@ -211,7 +201,6 @@ class ScoringEngine
         (floor + ratio * (max_score - floor)).round
       end
     elsif value.between?(range[:abs_min], range[:abs_max])
-      # Marginal zone: gradient from (floor - 1) near ideal edge → 1 near abs edge
       if value < range[:ideal_min]
         width = range[:ideal_min] - range[:abs_min]
         ratio = width > 0 ? (value - range[:abs_min]) / width.to_f : 0
@@ -249,12 +238,9 @@ class ScoringEngine
     end
   end
 
-  # Only show "best time to go" when timing is the main limiting factor.
-  # Hide when temperature or rain are problematic — waiting won't fix those.
-  # Both temp and rain must be in ideal range (>= floor) for timing advice to make sense.
   def show_best_time?(total, scores)
-    temp_floor = (@weights[:temperature] * IDEAL_FLOOR_RATIO).round
-    rain_floor = (@weights[:rain] * IDEAL_FLOOR_RATIO).round
+    temp_floor = (WEIGHTS[:temperature] * IDEAL_FLOOR_RATIO).round
+    rain_floor = (WEIGHTS[:rain] * IDEAL_FLOOR_RATIO).round
     total > 0 && scores[:temperature] >= temp_floor && scores[:rain] >= rain_floor
   end
 
@@ -314,29 +300,26 @@ class ScoringEngine
     days = weather[:days_since_rain] || 0
     rain_range = @species[:rain_range]
     temp_range = @species[:temp_range]
+    delay = @species[:delay_days]
 
     parts = []
 
-    delay = @species[:delay_days]
-
     if @lang == "ro"
-      parts << (scores[:season] >= @weights[:season] ? "sezon de vârf" : "în afara sezonului")
+      parts << (scores[:season] >= WEIGHTS[:season] ? "sezon de vârf" : "în afara sezonului")
       parts << temp_explanation_ro(temp, temp_range)
       parts << rain_explanation_ro(rain_mm, rain_range)
-      parts << habitat_explanation_ro(scores[:habitat]) if scores[:habitat]
       parts << timing_explanation_ro(days, delay)
     else
-      parts << (scores[:season] >= @weights[:season] ? "peak season" : "out of season")
+      parts << (scores[:season] >= WEIGHTS[:season] ? "peak season" : "out of season")
       parts << temp_explanation_en(temp, temp_range)
       parts << rain_explanation_en(rain_mm, rain_range)
-      parts << habitat_explanation_en(scores[:habitat]) if scores[:habitat]
       parts << timing_explanation_en(days, delay)
     end
 
     parts.join(" · ").capitalize
   end
 
-  # --- Explanation helpers (value-based, not score-based) ---
+  # --- Explanation helpers ---
 
   def temp_explanation_ro(temp, r)
     if temp.between?(r[:ideal_min], r[:ideal_max])
@@ -419,28 +402,6 @@ class ScoringEngine
       "too soon after rain (#{days} #{zile(days)})"
     else
       "too long since rain (#{days} #{zile(days)})"
-    end
-  end
-
-  def habitat_explanation_ro(habitat_score)
-    terrain_label = @land_cover[:label_ro] || "Teren nedetectat"
-    if habitat_score >= @weights[:habitat]
-      "#{terrain_label} — teren potrivit"
-    elsif habitat_score > 0
-      "#{terrain_label} — teren acceptabil"
-    else
-      "#{terrain_label} — teren nepotrivit"
-    end
-  end
-
-  def habitat_explanation_en(habitat_score)
-    terrain_label = @land_cover[:label_en] || "unknown"
-    if habitat_score >= @weights[:habitat]
-      "#{terrain_label} — good match"
-    elsif habitat_score > 0
-      "#{terrain_label} — okay match"
-    else
-      "#{terrain_label} — wrong terrain"
     end
   end
 end

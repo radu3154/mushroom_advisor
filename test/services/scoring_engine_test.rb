@@ -31,16 +31,11 @@ class ScoringEngineTest < Minitest::Test
     }
   end
 
-  def land_cover(type: "deciduous")
-    { type: type, label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "test" }
-  end
-
-  # ── Basic scoring ───────────────────────────────────────────────────
+  # ── Basic scoring (4 factors, no habitat) ───────────────────────────
 
   def test_morel_peak_conditions_scores_high
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    engine = ScoringEngine.new("morel", w, lang: "en", land_cover: land_cover(type: "deciduous"))
-    result = engine.call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert result[:score] >= 70, "Morel in ideal conditions should score >= 70, got #{result[:score]}"
     assert %w[excellent good].include?(result[:tier]),
       "Morel peak conditions should be excellent or good, got #{result[:tier]}"
@@ -48,8 +43,7 @@ class ScoringEngineTest < Minitest::Test
 
   def test_morel_out_of_season
     w = weather(temp: 12, rain: 20, days_since: 4, month: 8)
-    engine = ScoringEngine.new("morel", w, lang: "en")
-    result = engine.call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert_equal 0, result[:score]
     assert_equal "out-of-season", result[:tier]
     assert result[:out_of_season]
@@ -57,31 +51,40 @@ class ScoringEngineTest < Minitest::Test
 
   def test_boletus_in_season
     w = weather(temp: 17, rain: 30, days_since: 7, month: 8)
-    engine = ScoringEngine.new("boletus", w, lang: "en", land_cover: land_cover(type: "mixed"))
-    result = engine.call
+    result = ScoringEngine.new("boletus", w, lang: "en").call
     assert result[:score] >= 70, "Boletus in ideal conditions should score high, got #{result[:score]}"
   end
 
   def test_chanterelle_in_season
     w = weather(temp: 20, rain: 35, days_since: 3, month: 7)
-    engine = ScoringEngine.new("chanterelle", w, lang: "en", land_cover: land_cover(type: "deciduous"))
-    result = engine.call
+    result = ScoringEngine.new("chanterelle", w, lang: "en").call
     assert result[:score] >= 70, "Chanterelle in ideal conditions should score high, got #{result[:score]}"
+  end
+
+  def test_no_habitat_in_breakdown
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    refute result[:breakdown].key?(:habitat), "Breakdown should not contain habitat"
+    assert_equal %i[season temperature rain timing], result[:breakdown].keys
+  end
+
+  def test_max_score_is_100
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:score] <= 100, "Score should not exceed 100, got #{result[:score]}"
   end
 
   # ── Temperature effects ─────────────────────────────────────────────
 
   def test_too_cold_kills_score
     w = weather(temp: 0, rain: 20, days_since: 4, month: 4)
-    engine = ScoringEngine.new("morel", w, lang: "en")
-    result = engine.call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert_equal 0, result[:score], "Temperature below abs_min should zero out total"
   end
 
   def test_too_hot_kills_score
     w = weather(temp: 35, rain: 20, days_since: 4, month: 4)
-    engine = ScoringEngine.new("morel", w, lang: "en")
-    result = engine.call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert_equal 0, result[:score], "Temperature above abs_max should zero out total"
   end
 
@@ -93,53 +96,7 @@ class ScoringEngineTest < Minitest::Test
     assert score_ideal > score_marginal, "Ideal temp should score higher than marginal"
   end
 
-  # ── Habitat scoring ─────────────────────────────────────────────────
-
-  def test_ideal_habitat_scores_max
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: land_cover(type: "deciduous")).call
-    assert_equal 15, result[:breakdown][:habitat]
-  end
-
-  def test_partial_habitat_scores_half
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    lc = { type: "mixed", label_en: "Mixed forest", label_ro: "Pădure mixtă", source: "test" }
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: lc).call
-    assert_equal 8, result[:breakdown][:habitat]  # 15 * 0.5 = 7.5, rounded to 8
-  end
-
-  def test_bad_habitat_scores_zero
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    lc = { type: "coniferous", label_en: "Coniferous", label_ro: "Conifere", source: "test" }
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: lc).call
-    assert_equal 0, result[:breakdown][:habitat]
-  end
-
-  def test_unknown_terrain_uses_4_factor_weights
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: { type: "unknown" }).call
-    assert_nil result[:breakdown][:habitat], "Unknown terrain should not have habitat score"
-    # 4-factor weights: 30+30+30+10 = 100
-    max_possible = 30 + 30 + 30 + 10
-    assert result[:score] <= max_possible
-  end
-
-  # ── Romanian locale ─────────────────────────────────────────────────
-
-  def test_romanian_labels
-    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    result = ScoringEngine.new("morel", w, lang: "ro", land_cover: land_cover).call
-    assert %w[EXCELENT BINE ACCEPTABIL SLAB EVITĂ].include?(result[:label]),
-      "Romanian label should be one of the RO labels, got #{result[:label]}"
-  end
-
-  def test_romanian_out_of_season
-    w = weather(month: 12)
-    result = ScoringEngine.new("morel", w, lang: "ro").call
-    assert_equal "ÎN AFARA SEZONULUI", result[:label]
-  end
-
-  # ── Water detection ──────────────────────────────────────────────────
+  # ── Water skip ──────────────────────────────────────────────────────
 
   def test_water_terrain_scores_zero
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
@@ -148,7 +105,6 @@ class ScoringEngineTest < Minitest::Test
     assert_equal 0, result[:score]
     assert_equal "skip", result[:tier]
     assert result[:on_water]
-    assert_includes result[:message].downcase, "underwater"
   end
 
   def test_water_terrain_romanian
@@ -169,7 +125,7 @@ class ScoringEngineTest < Minitest::Test
     end
   end
 
-  # ── Urban terrain skip ───────────────────────────────────────────────
+  # ── Urban skip ───────────────────────────────────────────────────────
 
   def test_residential_terrain_scores_zero
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
@@ -206,6 +162,39 @@ class ScoringEngineTest < Minitest::Test
     end
   end
 
+  # ── Terrain match (for Check Terrain button) ───────────────────────
+
+  def test_terrain_match_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("morel", "deciduous")
+  end
+
+  def test_terrain_match_partial
+    assert_equal :partial, ScoringEngine.terrain_match("morel", "mixed")
+  end
+
+  def test_terrain_match_bad
+    assert_equal :bad, ScoringEngine.terrain_match("morel", "coniferous")
+  end
+
+  def test_terrain_match_unknown
+    assert_equal :unknown, ScoringEngine.terrain_match("morel", "other")
+  end
+
+  # ── Romanian locale ─────────────────────────────────────────────────
+
+  def test_romanian_labels
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "ro").call
+    assert %w[EXCELENT BINE ACCEPTABIL SLAB EVITĂ].include?(result[:label]),
+      "Romanian label should be one of the RO labels, got #{result[:label]}"
+  end
+
+  def test_romanian_out_of_season
+    w = weather(month: 12)
+    result = ScoringEngine.new("morel", w, lang: "ro").call
+    assert_equal "ÎN AFARA SEZONULUI", result[:label]
+  end
+
   # ── Edge cases ──────────────────────────────────────────────────────
 
   def test_all_species_can_be_scored
@@ -237,13 +226,30 @@ class ScoringEngineTest < Minitest::Test
 
   def test_best_time_in_sweet_spot
     w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: land_cover).call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert_includes result[:best_time], "sweet spot" if result[:best_time]
   end
 
   def test_best_time_wait_for_rain
     w = weather(temp: 12, rain: 20, days_since: 15, month: 4)
-    result = ScoringEngine.new("morel", w, lang: "en", land_cover: land_cover).call
+    result = ScoringEngine.new("morel", w, lang: "en").call
     assert_includes result[:best_time], "wait" if result[:best_time]
+  end
+
+  # ── Tips (merged habitat + tips) ────────────────────────────────────
+
+  def test_tips_returned_in_result
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    assert result[:tips].is_a?(Array), "Tips should be an array"
+    assert result[:tips].size >= 5, "Merged tips should have at least 5 entries"
+    refute result.key?(:habitat), "Result should not contain :habitat key"
+  end
+
+  def test_tips_no_duplicate_burn_sites
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    burn_tips = result[:tips].select { |t| t.downcase.include?("burn") }
+    assert_equal 1, burn_tips.size, "Should have exactly one burn-site tip, got #{burn_tips.size}"
   end
 end
