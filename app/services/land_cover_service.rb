@@ -176,6 +176,20 @@ class LandCoverService
             return result.merge(needs_elevation: true)
           end
         end
+
+        # Elevation sanity check for non-nature types (residential, etc.).
+        # Romanian cities are almost all below 400m. Above that, the terrain
+        # detection likely hit an oversized village polygon or a Nominatim
+        # road/building — trust the elevation-based forest guess instead.
+        unless NATURE_TYPES.include?(result[:type])
+          if elevation
+            guess = elevation_guess(elevation)
+            return guess.merge(source: "elevation_override") if guess
+          else
+            return result.merge(needs_elevation: true)
+          end
+        end
+
         return result.except(:meta)
       end
     end
@@ -199,6 +213,14 @@ class LandCoverService
 
     if result[:type] == "unknown" && elevation && elevation <= 0
       return terrain_result("water", "elevation")
+    end
+
+    # Elevation sanity check for non-nature types (residential, etc.).
+    # This handles the lazy AJAX path where elevation arrives after
+    # the initial terrain detection. Same logic as detect().
+    if elevation && !NATURE_TYPES.include?(result[:type]) && result[:type] != "unknown"
+      guess = elevation_guess(elevation)
+      return guess.merge(source: "elevation_override") if guess
     end
 
     if elevation && (result[:meta] == :forest_no_leaf_type || (result[:type] == "unknown" && elevation >= 400))
@@ -403,12 +425,16 @@ class LandCoverService
     # 2. Forest — determine leaf type from leaf_type, genus, or species tags
     if categories[:forest].any?
       leaf_types = categories[:forest].map { |e| e.dig("tags", "leaf_type") }.compact
-      if leaf_types.include?("broadleaved")
-        return terrain_result("deciduous", "osm")
-      elsif leaf_types.include?("needleleaved")
-        return terrain_result("coniferous", "osm")
-      elsif leaf_types.include?("mixed")
+      has_broad  = leaf_types.include?("broadleaved")
+      has_needle = leaf_types.include?("needleleaved")
+      has_mixed  = leaf_types.include?("mixed")
+
+      if has_mixed || (has_broad && has_needle)
         return terrain_result("mixed", "osm")
+      elsif has_broad
+        return terrain_result("deciduous", "osm")
+      elsif has_needle
+        return terrain_result("coniferous", "osm")
       end
 
       # Fallback: infer from genus/species tags when leaf_type is missing.
@@ -467,11 +493,20 @@ class LandCoverService
     nil
   end
 
-  # Nominatim classes that imply an urban/built environment.
-  # If we see one of these, the user is in a city — not in nature.
+  # Nominatim classes that reliably indicate an urban/built environment.
+  # IMPORTANT: Nominatim returns the NEAREST feature, not what you're
+  # standing on. Roads go through forests, buildings can be remote cabins,
+  # tourist sites are often in nature. Only classes that almost always
+  # mean "in a town" belong here.
+  #
+  # Removed (too many false positives in rural Romania):
+  #   building — barns, cabins, ranger stations in forests
+  #   highway  — forest roads, mountain passes, rural paths
+  #   tourism  — tourist sites are often in nature (viewpoints, huts)
+  #   man_made — towers, bridges, wells in forests
+  #   power    — power lines cross forests and fields
   URBAN_CLASSES = Set.new(%w[
-    building highway shop amenity office tourism craft
-    man_made railway aeroway power
+    shop amenity office craft railway aeroway
   ]).freeze
 
   URBAN_PLACE_TYPES = Set.new(%w[

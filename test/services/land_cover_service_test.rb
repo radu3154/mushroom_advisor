@@ -256,15 +256,16 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "park", result[:type]
   end
 
-  def test_nominatim_road_detects_urban
+  def test_nominatim_road_not_urban
+    # Roads go through forests — highway class should NOT trigger urban
     result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "residential"))
-    assert_equal "residential", result[:type]
-    assert_equal "nominatim", result[:source]
+    assert_nil result, "highway class should not detect as urban (roads exist in forests)"
   end
 
-  def test_nominatim_building_detects_urban
+  def test_nominatim_building_not_urban
+    # Buildings can be cabins, barns, ranger stations in forests
     result = LandCoverService.send(:parse_nominatim_response, nominatim("building", "apartments"))
-    assert_equal "residential", result[:type]
+    assert_nil result, "building class should not detect as urban (buildings exist in rural areas)"
   end
 
   def test_nominatim_shop_detects_commercial
@@ -659,10 +660,12 @@ class LandCoverServiceTest < Minitest::Test
       "Forest should beat residential in priority ordering"
   end
 
-  # All URBAN_TYPES from ScoringEngine should be detectable via Overpass
-  def test_all_urban_types_detectable_via_overpass
+  # All URBAN_TYPES from ScoringEngine that have landuse equivalents
+  # should be detectable via Overpass. (religious/education come from
+  # Nominatim sub-classification, not landuse tags.)
+  def test_most_urban_types_detectable_via_overpass
     %w[residential industrial commercial retail construction quarry landfill
-       military railway depot garages brownfield religious education].each do |tag|
+       military railway depot garages brownfield].each do |tag|
       elements = [osm("landuse" => tag)]
       result = LandCoverService.send(:parse_overpass_elements, elements)
       assert_equal tag, result[:type],
@@ -865,8 +868,9 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "residential", result
   end
 
-  def test_nominatim_urban_subtype_building
-    result = LandCoverService.send(:nominatim_urban_subtype, "building", "apartments")
+  def test_nominatim_urban_subtype_default_fallback
+    # Classes not explicitly mapped fall back to "residential"
+    result = LandCoverService.send(:nominatim_urban_subtype, "something_else", "whatever")
     assert_equal "residential", result
   end
 
@@ -1039,22 +1043,31 @@ class LandCoverServiceTest < Minitest::Test
     assert_equal "commercial", result[:type]
   end
 
-  # Nominatim: class=tourism should detect urban
-  def test_nominatim_tourism_detects_urban
+  # Nominatim: tourism/man_made/power should NOT detect urban
+  # These exist in rural/nature areas (viewpoints, towers, power lines)
+  def test_nominatim_tourism_not_urban
     result = LandCoverService.send(:parse_nominatim_response, nominatim("tourism", "hotel"))
-    assert_equal "residential", result[:type]
+    assert_nil result, "tourism class should not detect as urban"
   end
 
-  # Nominatim: class=man_made should detect urban
-  def test_nominatim_man_made_detects_urban
+  def test_nominatim_man_made_not_urban
     result = LandCoverService.send(:parse_nominatim_response, nominatim("man_made", "tower"))
-    assert_equal "residential", result[:type]
+    assert_nil result, "man_made class should not detect as urban"
   end
 
-  # Nominatim: class=power should detect urban
-  def test_nominatim_power_detects_urban
+  def test_nominatim_power_not_urban
     result = LandCoverService.send(:parse_nominatim_response, nominatim("power", "substation"))
-    assert_equal "residential", result[:type]
+    assert_nil result, "power class should not detect as urban"
+  end
+
+  def test_nominatim_highway_forest_road_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "track"))
+    assert_nil result, "Forest track should not detect as urban"
+  end
+
+  def test_nominatim_building_cabin_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("building", "cabin"))
+    assert_nil result, "Remote cabin should not detect as urban"
   end
 
   # Nominatim: amenity kindergarten → education
@@ -1148,6 +1161,451 @@ class LandCoverServiceTest < Minitest::Test
       result = LandCoverService.send(:parse_nominatim_response, nominatim("place", ptype))
       assert_equal "residential", result[:type],
         "Place type '#{ptype}' should detect as residential"
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # FALSE POSITIVE REGRESSION TESTS
+  # Real-world Romanian scenarios where terrain was wrongly detected
+  # ══════════════════════════════════════════════════════════════════════
+
+  # ── Nominatim false positives (roads/buildings in nature) ────────────
+
+  def test_forest_road_not_urban
+    # Nominatim finds a forest road → should NOT return "residential"
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "track"))
+    assert_nil result
+  end
+
+  def test_mountain_pass_road_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "secondary"))
+    assert_nil result
+  end
+
+  def test_ranger_cabin_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("building", "hut"))
+    assert_nil result
+  end
+
+  def test_forest_tower_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("man_made", "observation_tower"))
+    assert_nil result
+  end
+
+  def test_mountain_viewpoint_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("tourism", "viewpoint"))
+    assert_nil result
+  end
+
+  def test_power_line_in_forest_not_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("power", "line"))
+    assert_nil result
+  end
+
+  # ── Classes that SHOULD still detect urban ──────────────────────────
+
+  def test_nominatim_shop_still_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("shop", "bakery"))
+    assert_equal "commercial", result[:type]
+  end
+
+  def test_nominatim_office_still_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("office", "insurance"))
+    assert_equal "commercial", result[:type]
+  end
+
+  def test_nominatim_amenity_still_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("amenity", "hospital"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_craft_still_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("craft", "carpenter"))
+    assert_equal "residential", result[:type]
+  end
+
+  def test_nominatim_place_village_still_urban
+    result = LandCoverService.send(:parse_nominatim_response, nominatim("place", "village"))
+    assert_equal "residential", result[:type]
+  end
+
+  # ── Elevation override for urban types ──────────────────────────────
+
+  def test_elevation_overrides_residential_at_800m
+    # Overpass says "residential" but we're at 800m → deciduous forest
+    result = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 800)
+    assert_equal "deciduous", refined[:type],
+      "Residential at 800m should be overridden to deciduous, got #{refined[:type]}"
+    assert_equal "elevation_override", refined[:source]
+  end
+
+  def test_elevation_overrides_residential_at_1500m
+    result = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 1500)
+    assert_equal "coniferous", refined[:type]
+  end
+
+  def test_elevation_does_not_override_residential_at_200m
+    # 200m is lowland — residential is plausible, no elevation_guess match
+    result = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 200)
+    assert_equal "residential", refined[:type],
+      "Residential at 200m should stay residential (lowland town)"
+  end
+
+  def test_elevation_does_not_override_residential_at_350m
+    result = { type: "residential", label_en: "Residential", label_ro: "Zonă rezidențială", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 350)
+    assert_equal "residential", refined[:type],
+      "Residential at 350m should stay residential (could be a hill town)"
+  end
+
+  def test_elevation_overrides_industrial_at_600m
+    result = { type: "industrial", label_en: "Industrial", label_ro: "Zonă industrială", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 600)
+    assert_equal "deciduous", refined[:type]
+  end
+
+  def test_elevation_does_not_override_nature_type
+    # Nature types should NEVER be overridden by elevation
+    result = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    refined = LandCoverService.refine_with_elevation(result, 800)
+    assert_equal "grassland", refined[:type],
+      "Grassland should not be changed to deciduous"
+  end
+
+  # ── detect() with elevation sanity check ────────────────────────────
+
+  def test_detect_residential_overridden_at_high_elevation
+    overpass_residential = { type: "residential", label_en: "Residential",
+                             label_ro: "Zonă rezidențială", source: "osm" }
+    LandCoverService.stub(:query_terrain, overpass_residential) do
+      result = LandCoverService.detect(lat: 46.0, lon: 25.0, elevation: 800)
+      assert_equal "deciduous", result[:type],
+        "Residential at 800m should be overridden by elevation"
+    end
+  end
+
+  def test_detect_residential_stays_at_low_elevation
+    overpass_residential = { type: "residential", label_en: "Residential",
+                             label_ro: "Zonă rezidențială", source: "osm" }
+    LandCoverService.stub(:query_terrain, overpass_residential) do
+      result = LandCoverService.detect(lat: 44.4, lon: 26.1, elevation: 80)
+      assert_equal "residential", result[:type],
+        "Residential at 80m (Bucharest) should stay residential"
+    end
+  end
+
+  def test_detect_residential_needs_elevation_when_nil
+    overpass_residential = { type: "residential", label_en: "Residential",
+                             label_ro: "Zonă rezidențială", source: "osm" }
+    LandCoverService.stub(:query_terrain, overpass_residential) do
+      result = LandCoverService.detect(lat: 46.0, lon: 25.0, elevation: nil)
+      assert result[:needs_elevation],
+        "Residential without elevation should request elevation for sanity check"
+    end
+  end
+
+  def test_detect_forest_not_affected_by_elevation_check
+    overpass_forest = { type: "deciduous", label_en: "Deciduous forest",
+                        label_ro: "Pădure de foioase", source: "osm" }
+    LandCoverService.stub(:query_terrain, overpass_forest) do
+      result = LandCoverService.detect(lat: 46.0, lon: 25.0, elevation: 800)
+      assert_equal "deciduous", result[:type],
+        "Nature types should pass through unchanged"
+    end
+  end
+
+  # ── End-to-end scenarios (orchestrator + classification) ────────────
+
+  def test_scenario_forest_with_residential_polygon
+    # Overpass is_in finds residential, but nearby finds forest → forest wins
+    # (Tests the query_overpass NATURE_TYPES logic)
+    elements_isin = [osm("landuse" => "residential")]
+    result_isin = LandCoverService.send(:parse_overpass_elements, elements_isin)
+    assert_equal "residential", result_isin[:type], "is_in sees residential"
+
+    elements_nearby = [osm("landuse" => "forest", "leaf_type" => "broadleaved")]
+    result_nearby = LandCoverService.send(:parse_overpass_elements, elements_nearby)
+    assert_equal "deciduous", result_nearby[:type], "nearby finds forest"
+    # In query_overpass, residential is NOT a NATURE_TYPE so nearby runs and wins
+  end
+
+  def test_scenario_nominatim_road_in_forest_fallback_to_unknown
+    # Overpass finds nothing, Nominatim finds a road → should be nil (not urban)
+    nom = LandCoverService.send(:parse_nominatim_response, nominatim("highway", "residential"))
+    assert_nil nom, "Road should not be treated as terrain"
+
+    # Orchestrator would then use overpass "unknown" or unknown_result
+    # → elevation heuristic kicks in via detect()
+  end
+
+  def test_scenario_village_detected_correctly
+    # Place=village should still correctly detect urban
+    nom = LandCoverService.send(:parse_nominatim_response, nominatim("place", "village"))
+    assert_equal "residential", nom[:type]
+    # At 200m elevation, residential stays (no elevation override)
+  end
+
+  # ── Overpass "other" types preserved correctly ──────────────────────
+
+  def test_overpass_urban_landuse_types_still_work
+    # These are LANDUSE tags from Overpass (polygon-level), which are trustworthy
+    %w[residential industrial commercial construction quarry military].each do |tag|
+      elements = [osm("landuse" => tag)]
+      result = LandCoverService.send(:parse_overpass_elements, elements)
+      assert_equal tag, result[:type],
+        "Overpass landuse=#{tag} should return '#{tag}'"
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Mixed leaf_type inference — overlapping forest polygons
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_overlapping_broadleaved_and_needleleaved_returns_mixed
+    # Two forest polygons overlap at the query point — one oak, one spruce.
+    # Should detect "mixed" instead of favouring broadleaved.
+    elements = [
+      osm("landuse" => "forest", "leaf_type" => "broadleaved"),
+      osm("natural" => "wood",   "leaf_type" => "needleleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "mixed", result[:type],
+      "Overlapping broadleaved + needleleaved forests should return mixed"
+  end
+
+  def test_mixed_leaf_type_still_returns_mixed
+    elements = [osm("landuse" => "forest", "leaf_type" => "mixed")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "mixed", result[:type]
+  end
+
+  def test_mixed_with_broadleaved_returns_mixed
+    # A "mixed" polygon overlapping a "broadleaved" polygon → still mixed
+    elements = [
+      osm("landuse" => "forest", "leaf_type" => "broadleaved"),
+      osm("landuse" => "forest", "leaf_type" => "mixed")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "mixed", result[:type]
+  end
+
+  def test_three_forests_broadleaved_only_returns_deciduous
+    elements = [
+      osm("landuse" => "forest", "leaf_type" => "broadleaved"),
+      osm("natural" => "wood",   "leaf_type" => "broadleaved"),
+      osm("landuse" => "forest", "leaf_type" => "broadleaved")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type],
+      "Multiple broadleaved-only forests should still return deciduous"
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # detect() integration — grassland + elevation combinations
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_detect_grassland_at_low_elevation_stays_grassland
+    # Meadow at 300m should stay grassland, NOT get elevation-overridden
+    grassland = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    LandCoverService.stub(:query_terrain, grassland) do
+      result = LandCoverService.detect(lat: 46.0, lon: 25.0, elevation: 300)
+      assert_equal "grassland", result[:type]
+      refute result[:needs_elevation], "Low-elevation grassland should not need elevation"
+    end
+  end
+
+  def test_detect_grassland_at_1200m_stays_grassland
+    # Meadow at 1200m — still a real meadow, should NOT be overridden to mixed forest
+    grassland = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    LandCoverService.stub(:query_terrain, grassland) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 1200)
+      assert_equal "grassland", result[:type]
+    end
+  end
+
+  def test_detect_grassland_nil_elevation_needs_elevation
+    grassland = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    LandCoverService.stub(:query_terrain, grassland) do
+      result = LandCoverService.detect(lat: 46.0, lon: 25.0, elevation: nil)
+      assert_equal "grassland", result[:type]
+      assert result[:needs_elevation], "Grassland with nil elevation should need elevation"
+    end
+  end
+
+  def test_detect_grassland_at_1800m_becomes_alpine
+    grassland = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    LandCoverService.stub(:query_terrain, grassland) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 1800)
+      assert_equal "grassland", result[:type]
+      assert_equal "Alpine meadow", result[:label_en]
+      assert_equal "Pajiște alpină", result[:label_ro]
+    end
+  end
+
+  def test_detect_grassland_at_2200m_becomes_alpine
+    grassland = { type: "grassland", label_en: "Meadow", label_ro: "Pajiște", source: "osm" }
+    LandCoverService.stub(:query_terrain, grassland) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 2200)
+      assert_equal "grassland", result[:type]
+      assert_equal "Alpine meadow", result[:label_en]
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # detect() integration — nature types NOT affected by elevation override
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_detect_deciduous_at_1500m_not_overridden
+    # A deciduous forest tagged by Overpass at 1500m is real — don't override to coniferous
+    deciduous = { type: "deciduous", label_en: "Deciduous forest", label_ro: "Pădure de foioase", source: "osm" }
+    LandCoverService.stub(:query_terrain, deciduous) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 1500)
+      assert_equal "deciduous", result[:type],
+        "OSM-detected deciduous should not be overridden by elevation"
+    end
+  end
+
+  def test_detect_coniferous_at_500m_not_overridden
+    # Coniferous plantation at low elevation is real
+    coniferous = { type: "coniferous", label_en: "Coniferous forest", label_ro: "Pădure de conifere", source: "osm" }
+    LandCoverService.stub(:query_terrain, coniferous) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 500)
+      assert_equal "coniferous", result[:type],
+        "OSM-detected coniferous should not be overridden by elevation"
+    end
+  end
+
+  def test_detect_wetland_at_800m_not_overridden
+    wetland = { type: "wetland", label_en: "Wetland", label_ro: "Zonă umedă", source: "osm" }
+    LandCoverService.stub(:query_terrain, wetland) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 800)
+      assert_equal "wetland", result[:type]
+    end
+  end
+
+  def test_detect_park_not_overridden
+    park = { type: "park", label_en: "Park", label_ro: "Parc", source: "osm" }
+    LandCoverService.stub(:query_terrain, park) do
+      result = LandCoverService.detect(lat: 45.5, lon: 24.5, elevation: 600)
+      assert_equal "park", result[:type]
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # refine_with_elevation() — full integration for AJAX path
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_refine_residential_at_700m_overrides_to_deciduous
+    result = { type: "residential", label_en: "Residential area",
+               label_ro: "Zonă rezidențială", source: "nominatim", needs_elevation: true }
+    refined = LandCoverService.refine_with_elevation(result, 700)
+    assert_equal "deciduous", refined[:type]
+    assert_equal "elevation_override", refined[:source]
+  end
+
+  def test_refine_residential_at_250m_stays_residential
+    result = { type: "residential", label_en: "Residential area",
+               label_ro: "Zonă rezidențială", source: "nominatim", needs_elevation: true }
+    refined = LandCoverService.refine_with_elevation(result, 250)
+    assert_equal "residential", refined[:type],
+      "Low-elevation residential should stay residential"
+  end
+
+  def test_refine_unknown_at_600m_gets_deciduous
+    result = { type: "unknown", label_en: "Unknown terrain",
+               label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, 600)
+    assert_equal "deciduous", refined[:type]
+  end
+
+  def test_refine_unknown_at_1600m_gets_coniferous
+    result = { type: "unknown", label_en: "Unknown terrain",
+               label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, 1600)
+    assert_equal "coniferous", refined[:type]
+  end
+
+  def test_refine_unknown_at_2000m_gets_alpine
+    result = { type: "unknown", label_en: "Unknown terrain",
+               label_ro: "Teren nedetectat", source: "none" }
+    refined = LandCoverService.refine_with_elevation(result, 2000)
+    assert_equal "grassland", refined[:type]
+    assert_equal "Alpine meadow", refined[:label_en]
+  end
+
+  def test_refine_forest_no_leaf_at_1100m_gets_mixed
+    result = { type: "unknown", label_en: "Forest (type unknown)",
+               label_ro: "Pădure (tip neidentificat)", source: "osm_partial",
+               meta: :forest_no_leaf_type }
+    refined = LandCoverService.refine_with_elevation(result, 1100)
+    assert_equal "mixed", refined[:type]
+  end
+
+  def test_refine_forest_no_leaf_at_500m_gets_deciduous
+    result = { type: "unknown", label_en: "Forest (type unknown)",
+               label_ro: "Pădure (tip neidentificat)", source: "osm_partial",
+               meta: :forest_no_leaf_type }
+    refined = LandCoverService.refine_with_elevation(result, 500)
+    assert_equal "deciduous", refined[:type]
+  end
+
+  def test_refine_forest_no_leaf_no_elevation_defaults_deciduous
+    result = { type: "unknown", label_en: "Forest (type unknown)",
+               label_ro: "Pădure (tip neidentificat)", source: "osm_partial",
+               meta: :forest_no_leaf_type }
+    refined = LandCoverService.refine_with_elevation(result, nil)
+    assert_equal "deciduous", refined[:type]
+    assert_equal "osm_default", refined[:source]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Genus inference edge cases
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_genus_case_insensitive
+    # OSM data can have mixed-case genus tags
+    elements = [osm("landuse" => "forest", "genus" => "Fagus")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "deciduous", result[:type]
+  end
+
+  def test_species_tag_extracts_genus_correctly
+    elements = [osm("landuse" => "forest", "species" => "Abies alba")]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "coniferous", result[:type]
+  end
+
+  def test_mixed_genera_from_species_tags
+    elements = [
+      osm("landuse" => "forest", "species" => "Fagus sylvatica"),
+      osm("natural" => "wood",   "species" => "Picea abies")
+    ]
+    result = LandCoverService.send(:parse_overpass_elements, elements)
+    assert_equal "mixed", result[:type]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # NATURE_TYPES consistency
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_all_terrain_map_targets_are_nature_types
+    # Every category that TERRAIN_MAP maps to should be in NATURE_TYPES
+    terrain_types = LandCoverService::TERRAIN_MAP.values.uniq.map(&:to_s)
+    terrain_types.each do |t|
+      # :forest is an intermediate → resolved to deciduous/coniferous/mixed
+      next if t == "forest"
+      assert LandCoverService::NATURE_TYPES.include?(t),
+        "TERRAIN_MAP target '#{t}' should be in NATURE_TYPES"
+    end
+  end
+
+  def test_elevation_band_types_are_nature_types
+    LandCoverService::ELEVATION_BANDS.each do |band|
+      assert LandCoverService::NATURE_TYPES.include?(band[:type]),
+        "Elevation band type '#{band[:type]}' should be in NATURE_TYPES"
     end
   end
 end
