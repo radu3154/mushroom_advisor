@@ -814,6 +814,594 @@ class Species
           <path d="M152 276 Q153 268 150 260" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.25"/>
         </svg>
       SVG
+    },
+    "parasol" => {
+      name: "Parasol Mushroom",
+      name_ro: "Pălăria Șarpelui",
+      latin: "Macrolepiota procera",
+      description: "The towering parasol of meadows and forest edges. This majestic mushroom can reach 40 cm tall, its flat scaly cap opening like an umbrella over a snakeskin-patterned stem.",
+      description_ro: "Umbrela maiestuoasă a pajiștilor și marginilor de pădure. Această ciupercă impunătoare poate atinge 40 cm înălțime, cu pălăria plată și solzoasă deschisă ca o umbrelă peste o tijă cu model de piele de șarpe.",
+      season_months: [6, 7, 8, 9, 10],
+      temp_range: { ideal_min: 14, ideal_max: 22, abs_min: 7, abs_max: 28 },
+      rain_range: { ideal_min: 15, ideal_max: 50, abs_min: 5, abs_max: 75 },
+      delay_days: { ideal_min: 3, ideal_max: 7, abs_min: 1, abs_max: 10 },
+      # Saprophytic — responds to sustained warmth + moisture.
+      # 7-day average captures the summer heat that drives decomposition.
+      temp_window: 7,
+      # Peak is August–October when summer thunderstorms meet warm soil.
+      # June and July are secondary (early scouts after first big rains).
+      peak_months: [8, 9, 10],
+      # Saprophytic grassland/edge species — loves open, well-lit areas.
+      # Meadows & light deciduous woods are ideal. Dense conifer = too dark/acidic.
+      preferred_terrain: { ideal: ["grassland", "deciduous", "park"], partial: ["mixed", "scrubland", "farmland", "orchard"], bad: ["coniferous", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:herb)} Meadows, pastures, and grassy forest edges — it loves open light",
+        "#{IconHelper.icon(:storm)} Best 3–7 days after heavy summer thunderstorms",
+        "#{IconHelper.icon(:sun)} Look on sunny, well-drained slopes with rich soil",
+        "#{IconHelper.icon(:sparkle)} Fairy rings — they often grow in circles!",
+        "#{IconHelper.icon(:hand_pick)} Only take the cap — the tough stem is not worth eating",
+        "#{IconHelper.icon(:checkmark)} Double-ring on the stem slides up and down — key ID feature",
+        "#{IconHelper.icon(:map_pin)} Return to known meadows — they fruit in the same spots yearly"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:herb)} Pajiști, pășuni și marginile înierbare ale pădurilor — adoră lumina",
+        "#{IconHelper.icon(:storm)} Cel mai bine la 3–7 zile după furtuni puternice de vară",
+        "#{IconHelper.icon(:sun)} Caută pe versanți însoriti, bine drenați, cu sol bogat",
+        "#{IconHelper.icon(:sparkle)} Cercuri de vrăjitoare — cresc adesea în cercuri!",
+        "#{IconHelper.icon(:hand_pick)} Ia doar pălăria — piciorul e prea tare pentru gătit",
+        "#{IconHelper.icon(:checkmark)} Inelul dublu de pe picior alunecă sus-jos — semn distinctiv",
+        "#{IconHelper.icon(:map_pin)} Revino la pajiștile cunoscute — fructifică în aceleași locuri"
+      ],
+      color: "#A0826D",
+      gradient_from: "#8a6a55",
+      gradient_to: "#c4a088",
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="par-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#a8c8e0"/>
+              <stop offset="35%" stop-color="#c8d8a0"/>
+              <stop offset="100%" stop-color="#8a9a58"/>
+            </linearGradient>
+            <linearGradient id="par-cap-top" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%" stop-color="#e0d0b8"/>
+              <stop offset="40%" stop-color="#c8b898"/>
+              <stop offset="100%" stop-color="#a89070"/>
+            </linearGradient>
+            <linearGradient id="par-stem" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#c0a888"/>
+              <stop offset="25%" stop-color="#d8c8b0"/>
+              <stop offset="75%" stop-color="#d8c8b0"/>
+              <stop offset="100%" stop-color="#b8a080"/>
+            </linearGradient>
+            <linearGradient id="par-gills" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f0e8dc"/>
+              <stop offset="100%" stop-color="#e0d4c0"/>
+            </linearGradient>
+            <radialGradient id="par-umbo" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="#6a5030"/>
+              <stop offset="80%" stop-color="#8a6a48"/>
+              <stop offset="100%" stop-color="#a88060"/>
+            </radialGradient>
+            <filter id="par-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#par-bg)"/>
+          <!-- Grassy meadow floor -->
+          <ellipse cx="200" cy="282" rx="220" ry="28" fill="#6a8a38" opacity="0.3"/>
+          <ellipse cx="200" cy="278" rx="200" ry="18" fill="#7a9a48" opacity="0.25"/>
+          <!-- Grass blades background -->
+          <g opacity="0.4" stroke="#5a8a30" fill="none">
+            <path d="M50 280 Q52 264 48 252" stroke-width="1.5"/>
+            <path d="M55 280 Q58 266 62 255" stroke-width="1.2"/>
+            <path d="M60 280 Q57 268 54 258" stroke-width="1"/>
+            <path d="M340 278 Q338 264 342 254" stroke-width="1.4"/>
+            <path d="M345 278 Q348 265 344 256" stroke-width="1.1"/>
+            <path d="M350 278 Q353 266 356 257" stroke-width="1"/>
+            <path d="M110 280 Q112 268 108 260" stroke-width="1.2"/>
+            <path d="M115 280 Q118 270 120 262" stroke-width="1"/>
+            <path d="M280 279 Q278 266 282 258" stroke-width="1.3"/>
+            <path d="M285 279 Q288 268 284 260" stroke-width="1"/>
+          </g>
+          <!-- Wildflowers -->
+          <g opacity="0.4">
+            <circle cx="75" cy="268" r="2.5" fill="#e8d040"/>
+            <circle cx="78" cy="272" r="2" fill="#e8d040"/>
+            <circle cx="330" cy="270" r="2.5" fill="#d0a0d0"/>
+            <circle cx="325" cy="274" r="2" fill="#d0a0d0"/>
+            <circle cx="160" cy="276" r="2" fill="#f0f0a0"/>
+            <circle cx="245" cy="275" r="2.2" fill="#e8d040"/>
+          </g>
+          <!-- Main parasol mushroom with shadow -->
+          <g filter="url(#par-shadow)">
+            <!-- Stem — very tall, thin, with bulbous base -->
+            <path d="M194 276 Q191 248 190 220 Q189 190 190 160 Q190 140 192 126 Q194 120 197 118 L203 118 Q206 120 208 126 Q210 140 210 160 Q211 190 210 220 Q209 248 206 276 Z" fill="url(#par-stem)"/>
+            <!-- Stem bulbous base -->
+            <ellipse cx="200" cy="274" rx="10" ry="5" fill="#c0a880" opacity="0.5"/>
+            <!-- Snakeskin pattern on stem (characteristic zigzag bands) -->
+            <g stroke="#8a6840" stroke-width="1" fill="none" opacity="0.4">
+              <path d="M192 260 Q196 256 200 260 Q204 264 208 260"/>
+              <path d="M191 245 Q195 241 200 245 Q205 249 209 245"/>
+              <path d="M190 230 Q195 226 200 230 Q205 234 210 230"/>
+              <path d="M190 215 Q195 211 200 215 Q205 219 210 215"/>
+              <path d="M190 200 Q195 196 200 200 Q205 204 210 200"/>
+              <path d="M190 185 Q195 181 200 185 Q205 189 210 185"/>
+              <path d="M190 170 Q195 166 200 170 Q205 174 210 170"/>
+              <path d="M191 155 Q195 151 200 155 Q205 159 209 155"/>
+              <path d="M192 140 Q196 136 200 140 Q204 144 208 140"/>
+            </g>
+            <!-- Stem left shadow -->
+            <path d="M194 276 Q191 248 190 220 Q189 190 190 160 Q190 140 192 126 Q194 120 197 118 L199 118 Q196 122 195 130 Q193 142 193 162 Q192 192 193 222 Q193 250 196 276 Z" fill="#a08860" opacity="0.2"/>
+            <!-- Movable ring (double ring — characteristic ID feature) -->
+            <ellipse cx="200" cy="125" rx="14" ry="3.5" fill="#e8dcc0"/>
+            <ellipse cx="200" cy="125" rx="14" ry="3.5" stroke="#b8a080" stroke-width="0.8" fill="none"/>
+            <ellipse cx="200" cy="123" rx="12" ry="2.5" fill="#f0e8d4"/>
+            <path d="M187 125 Q188 128 200 130 Q212 128 213 125" fill="#d8c8a8" opacity="0.5"/>
+            <!-- Gills — crowded, free, whitish, visible under cap -->
+            <g stroke="#c8b898" stroke-width="0.5" fill="none" opacity="0.45">
+              <path d="M120 108 Q155 100 200 114"/>
+              <path d="M126 106 Q158 98 200 112"/>
+              <path d="M132 104 Q160 97 200 110"/>
+              <path d="M140 102 Q165 96 200 108"/>
+              <path d="M148 100 Q170 95 200 106"/>
+              <path d="M158 98 Q176 95 200 104"/>
+              <path d="M200 114 Q245 100 280 108"/>
+              <path d="M200 112 Q242 98 274 106"/>
+              <path d="M200 110 Q240 97 268 104"/>
+              <path d="M200 108 Q235 96 260 102"/>
+              <path d="M200 106 Q230 95 252 100"/>
+              <path d="M200 104 Q224 95 242 98"/>
+            </g>
+            <!-- Cap — broad, flat parasol shape with slight central bump -->
+            <path d="M108 104 Q110 88 140 76 Q170 66 200 64 Q230 66 260 76 Q290 88 292 104 Q260 112 200 116 Q140 112 108 104 Z" fill="url(#par-cap-top)"/>
+            <!-- Cap underside (gill base visible at edge) -->
+            <path d="M108 104 Q140 112 200 116 Q260 112 292 104 Q270 108 200 110 Q130 108 108 104 Z" fill="url(#par-gills)" opacity="0.6"/>
+            <!-- Central umbo (dark raised boss) -->
+            <ellipse cx="200" cy="78" rx="14" ry="8" fill="url(#par-umbo)"/>
+            <!-- Cap scales — brown, radiating outward from center (characteristic) -->
+            <g fill="#8a6a40" opacity="0.35">
+              <!-- Inner ring of scales -->
+              <ellipse cx="180" cy="80" rx="5" ry="3" transform="rotate(-10 180 80)"/>
+              <ellipse cx="220" cy="80" rx="5" ry="3" transform="rotate(10 220 80)"/>
+              <ellipse cx="200" cy="70" rx="4" ry="3"/>
+              <ellipse cx="190" cy="88" rx="5" ry="2.5" transform="rotate(-5 190 88)"/>
+              <ellipse cx="210" cy="88" rx="5" ry="2.5" transform="rotate(5 210 88)"/>
+              <!-- Middle ring of scales -->
+              <ellipse cx="160" cy="86" rx="6" ry="3" transform="rotate(-15 160 86)"/>
+              <ellipse cx="240" cy="86" rx="6" ry="3" transform="rotate(15 240 86)"/>
+              <ellipse cx="170" cy="94" rx="5" ry="2.5" transform="rotate(-8 170 94)"/>
+              <ellipse cx="230" cy="94" rx="5" ry="2.5" transform="rotate(8 230 94)"/>
+              <ellipse cx="200" cy="94" rx="5" ry="2.5"/>
+              <ellipse cx="148" cy="92" rx="5" ry="2.5" transform="rotate(-20 148 92)"/>
+              <ellipse cx="252" cy="92" rx="5" ry="2.5" transform="rotate(20 252 92)"/>
+              <!-- Outer ring of scales (smaller, sparser) -->
+              <ellipse cx="135" cy="96" rx="4" ry="2" transform="rotate(-25 135 96)"/>
+              <ellipse cx="265" cy="96" rx="4" ry="2" transform="rotate(25 265 96)"/>
+              <ellipse cx="155" cy="100" rx="4" ry="2" transform="rotate(-12 155 100)"/>
+              <ellipse cx="245" cy="100" rx="4" ry="2" transform="rotate(12 245 100)"/>
+              <ellipse cx="180" cy="102" rx="4" ry="2"/>
+              <ellipse cx="220" cy="102" rx="4" ry="2"/>
+              <ellipse cx="122" cy="100" rx="3.5" ry="1.8" transform="rotate(-30 122 100)"/>
+              <ellipse cx="278" cy="100" rx="3.5" ry="1.8" transform="rotate(30 278 100)"/>
+            </g>
+            <!-- Cap glossy highlight -->
+            <path d="M145 78 Q170 68 200 66 Q218 66 235 70 Q215 66 195 72 Q168 80 155 92 Z" fill="#f0e8d8" opacity="0.25"/>
+            <!-- Cap right shadow -->
+            <path d="M265 80 Q282 88 289 98 Q290 102 292 104 L278 106 Q276 96 268 88 Z" fill="#7a6040" opacity="0.15"/>
+          </g>
+          <!-- Foreground grass tufts -->
+          <g opacity="0.5" stroke="#5a8a30" fill="none">
+            <path d="M140 278 Q138 264 142 254" stroke-width="1.5"/>
+            <path d="M145 278 Q148 266 144 256" stroke-width="1.2"/>
+            <path d="M150 278 Q152 268 156 258" stroke-width="1"/>
+            <path d="M252 277 Q250 264 254 255" stroke-width="1.4"/>
+            <path d="M257 277 Q260 266 256 257" stroke-width="1.1"/>
+            <path d="M262 277 Q264 268 260 258" stroke-width="1"/>
+          </g>
+          <!-- Distant grass silhouette -->
+          <g opacity="0.15" stroke="#4a6a20" fill="none" stroke-width="1.5">
+            <path d="M0 280 Q10 268 8 255"/>
+            <path d="M6 280 Q14 270 18 258"/>
+            <path d="M390 280 Q385 268 388 256"/>
+            <path d="M395 280 Q392 270 396 258"/>
+          </g>
+        </svg>
+      SVG
+    },
+    "honey_fungus" => {
+      name: "Honey Fungus",
+      name_ro: "Ghebe",
+      latin: "Armillaria mellea",
+      description: "The autumn stump-dweller that fruits in golden clusters. Honey fungus erupts from tree bases and stumps after cool autumn rains, its dense bouquets glowing amber against dark bark.",
+      description_ro: "Locuitorul de cioate al toamnei, care fructifică în ciorchini aurii. Ghebele erup de la baza copacilor și cioatelor după ploi reci de toamnă, buchetele lor dense strălucind chihlimbar pe scoarța întunecată.",
+      season_months: [8, 9, 10, 11],
+      temp_range: { ideal_min: 8, ideal_max: 18, abs_min: 3, abs_max: 24 },
+      rain_range: { ideal_min: 15, ideal_max: 45, abs_min: 5, abs_max: 70 },
+      delay_days: { ideal_min: 3, ideal_max: 7, abs_min: 1, abs_max: 10 },
+      # Parasitic/saprotrophic — already colonized on wood substrate.
+      # Responds quickly to autumn cooling after rain.
+      temp_window: 5,
+      # Peak is September–October when nights cool and autumn rains arrive.
+      # August and November are secondary (early scouts and late stragglers).
+      peak_months: [9, 10],
+      # Parasitic on both deciduous and coniferous trees — needs living/dead wood.
+      # Deciduous & mixed forests are ideal. Open grassland = no host trees.
+      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "park", "orchard", "scrubland"], bad: ["grassland", "farmland", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:log)} Look at the base of living trees and on old stumps",
+        "#{IconHelper.icon(:tree_deciduous)} Oak, beech, and birch forests are prime hunting grounds",
+        "#{IconHelper.icon(:rain_heavy)} Best 3–7 days after steady autumn rains with cool nights",
+        "#{IconHelper.icon(:sparkle)} They grow in dense clusters — where there's one, there are dozens",
+        "#{IconHelper.icon(:fallen_leaf)} Check when leaves start falling and nights drop below 15°C",
+        "#{IconHelper.icon(:checkmark)} Always verify the white ring on the stem — key safety feature",
+        "#{IconHelper.icon(:amanita)} Beware look-alikes: Galerina marginata is deadly — check for ring and clustered growth"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:log)} Caută la baza copacilor vii și pe cioate vechi",
+        "#{IconHelper.icon(:tree_deciduous)} Pădurile de stejar, fag și mesteacăn sunt locuri ideale",
+        "#{IconHelper.icon(:rain_heavy)} Cel mai bine la 3–7 zile după ploi de toamnă cu nopți reci",
+        "#{IconHelper.icon(:sparkle)} Cresc în ciorchini denși — unde e una, sunt zeci",
+        "#{IconHelper.icon(:fallen_leaf)} Caută când cad frunzele și nopțile scad sub 15°C",
+        "#{IconHelper.icon(:checkmark)} Verifică mereu inelul alb de pe picior — semn distinctiv de siguranță",
+        "#{IconHelper.icon(:amanita)} Atenție la confuzii: Galerina marginata este mortală — verifică inelul și creșterea în ciorchini"
+      ],
+      color: "#C8A030",
+      gradient_from: "#a88520",
+      gradient_to: "#e8c860",
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Soft autumn afternoon gradient -->
+            <linearGradient id="honey-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9aaa90"/>
+              <stop offset="30%" stop-color="#8a9878"/>
+              <stop offset="65%" stop-color="#708060"/>
+              <stop offset="100%" stop-color="#5a6848"/>
+            </linearGradient>
+            <!-- Living tree trunk (not a stump — cluster grows from base) -->
+            <linearGradient id="honey-trunk" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a7858"/>
+              <stop offset="35%" stop-color="#7a6848"/>
+              <stop offset="70%" stop-color="#6a5838"/>
+              <stop offset="100%" stop-color="#5a4828"/>
+            </linearGradient>
+            <!-- Warm golden cap with tawny-honey tones -->
+            <linearGradient id="honey-cap" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%" stop-color="#e8c458"/>
+              <stop offset="30%" stop-color="#d4a838"/>
+              <stop offset="60%" stop-color="#c09028"/>
+              <stop offset="100%" stop-color="#a87820"/>
+            </linearGradient>
+            <!-- Younger, brighter cap -->
+            <linearGradient id="honey-cap2" x1="0.3" y1="0" x2="0.7" y2="1">
+              <stop offset="0%" stop-color="#f0d068"/>
+              <stop offset="50%" stop-color="#d8b040"/>
+              <stop offset="100%" stop-color="#c09830"/>
+            </linearGradient>
+            <!-- Pale cream stem -->
+            <linearGradient id="honey-stem" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#c0b088"/>
+              <stop offset="20%" stop-color="#ddd0b0"/>
+              <stop offset="50%" stop-color="#e8dcc0"/>
+              <stop offset="80%" stop-color="#d8c8a8"/>
+              <stop offset="100%" stop-color="#b8a480"/>
+            </linearGradient>
+            <!-- Darker stem for background mushrooms -->
+            <linearGradient id="honey-stem2" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#a89870"/>
+              <stop offset="50%" stop-color="#c4b898"/>
+              <stop offset="100%" stop-color="#a49068"/>
+            </linearGradient>
+            <!-- Gill undersurface -->
+            <linearGradient id="honey-gill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f0e0b8"/>
+              <stop offset="100%" stop-color="#c8a860"/>
+            </linearGradient>
+            <!-- Cap sheen -->
+            <radialGradient id="honey-shine" cx="0.3" cy="0.25" r="0.5">
+              <stop offset="0%" stop-color="#f8e070" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#c8a030" stop-opacity="0"/>
+            </radialGradient>
+            <!-- Atmospheric haze -->
+            <linearGradient id="honey-haze" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a9a80" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#8a9a80" stop-opacity="0.12"/>
+            </linearGradient>
+            <filter id="honey-shadow" x="-10%" y="-5%" width="120%" height="115%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+              <feOffset dx="2" dy="3"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.12"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Background -->
+          <rect width="400" height="300" fill="url(#honey-bg)"/>
+          <!-- (background kept clean) -->
+          <!-- Forest floor — leaf litter -->
+          <ellipse cx="200" cy="288" rx="240" ry="25" fill="#4a4030" opacity="0.3"/>
+          <ellipse cx="200" cy="283" rx="220" ry="18" fill="#5a5038" opacity="0.2"/>
+          <!-- Scattered autumn leaves with veins -->
+          <g opacity="0.45">
+            <ellipse cx="42" cy="275" rx="15" ry="5" fill="#b86818" transform="rotate(-28 42 275)"/>
+            <line x1="38" y1="276" x2="46" y2="274" stroke="#8a4810" stroke-width="0.4" opacity="0.5"/>
+          </g>
+          <ellipse cx="80" cy="270" rx="12" ry="4.5" fill="#c88028" opacity="0.35" transform="rotate(15 80 270)"/>
+          <g opacity="0.38">
+            <ellipse cx="340" cy="273" rx="16" ry="5" fill="#a85818" transform="rotate(20 340 273)"/>
+            <line x1="336" y1="274" x2="344" y2="272" stroke="#804010" stroke-width="0.4" opacity="0.5"/>
+          </g>
+          <ellipse cx="360" cy="268" rx="10" ry="3.5" fill="#d09030" opacity="0.25" transform="rotate(-22 360 268)"/>
+          <ellipse cx="120" cy="280" rx="13" ry="4" fill="#b07020" opacity="0.3" transform="rotate(32 120 280)"/>
+          <ellipse cx="280" cy="278" rx="11" ry="3.5" fill="#c08828" opacity="0.28" transform="rotate(-12 280 278)"/>
+          <!-- Tiny twigs on ground -->
+          <line x1="55" y1="278" x2="100" y2="274" stroke="#5a4a30" stroke-width="1" opacity="0.2"/>
+          <line x1="300" y1="276" x2="335" y2="272" stroke="#5a4a30" stroke-width="0.8" opacity="0.18"/>
+          <!-- ══════ OAK TREE BASE ══════ -->
+          <g>
+            <!-- Trunk body — wide, slightly irregular -->
+            <path d="M140 300 L136 240 Q134 215 140 195 Q148 180 160 170 Q168 164 176 166 L224 166 Q232 164 240 170 Q252 180 260 195 Q266 215 264 240 L260 300 Z" fill="url(#honey-trunk)"/>
+            <!-- Bark texture — deep vertical cracks -->
+            <path d="M155 170 Q153 210 155 250 Q156 275 155 298" stroke="#3a2810" stroke-width="2" fill="none" opacity="0.38"/>
+            <path d="M170 168 Q168 210 170 250 Q171 278 170 298" stroke="#3a2810" stroke-width="1.4" fill="none" opacity="0.3"/>
+            <path d="M186 167 Q185 210 186 250 Q186 278 186 300" stroke="#3a2810" stroke-width="1.1" fill="none" opacity="0.26"/>
+            <path d="M200 167 Q201 210 200 252 Q200 278 200 300" stroke="#3a2810" stroke-width="1.1" fill="none" opacity="0.26"/>
+            <path d="M214 167 Q215 210 214 250 Q214 278 214 300" stroke="#3a2810" stroke-width="1.1" fill="none" opacity="0.26"/>
+            <path d="M230 168 Q232 210 230 250 Q229 278 230 298" stroke="#3a2810" stroke-width="1.4" fill="none" opacity="0.3"/>
+            <path d="M245 170 Q247 210 245 250 Q244 275 245 298" stroke="#3a2810" stroke-width="2" fill="none" opacity="0.38"/>
+            <!-- Horizontal bark plates -->
+            <path d="M142 200 Q165 198 200 200 Q235 198 258 200" stroke="#3a2810" stroke-width="0.7" fill="none" opacity="0.2"/>
+            <path d="M138 225 Q170 223 200 224 Q230 223 262 225" stroke="#3a2810" stroke-width="0.7" fill="none" opacity="0.18"/>
+            <path d="M136 250 Q172 248 200 249 Q228 248 264 250" stroke="#3a2810" stroke-width="0.7" fill="none" opacity="0.18"/>
+            <path d="M136 275 Q178 273 200 274 Q222 273 264 275" stroke="#3a2810" stroke-width="0.6" fill="none" opacity="0.15"/>
+            <!-- Bark highlight (left light source) -->
+            <path d="M148 180 Q146 210 148 250 Q149 275 148 295" stroke="#7a6a50" stroke-width="3" fill="none" opacity="0.12"/>
+            <!-- Dark right edge -->
+            <path d="M252 180 Q254 210 252 250 Q251 275 252 295" stroke="#3a2a15" stroke-width="2.5" fill="none" opacity="0.15"/>
+
+            <!-- ── Branch stubs ── -->
+            <!-- Left stub (broken short, angled up-left) -->
+            <path d="M140 195 Q126 186 116 178" stroke="#4a3820" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <path d="M140 195 Q126 186 116 178" stroke="#5a4830" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+            <path d="M116 178 L112 172 L118 175" fill="#4a3820" opacity="0.5"/>
+
+            <!-- Right stub (shorter, angled up-right) -->
+            <path d="M260 200 Q274 192 282 186" stroke="#4a3820" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+            <path d="M260 200 Q274 192 282 186" stroke="#5a4830" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+
+            <!-- Lower left twig stub -->
+            <path d="M138 240 Q126 234 120 228" stroke="#4a3820" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+            <path d="M138 240 Q126 234 120 228" stroke="#5a4830" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+            <!-- Root flare at base -->
+            <path d="M136 290 Q120 286 108 290 Q100 296 98 300 L140 300 Z" fill="#6a5838" opacity="0.5"/>
+            <path d="M264 290 Q280 286 292 290 Q300 296 302 300 L260 300 Z" fill="#5a4828" opacity="0.45"/>
+
+            <!-- Moss patches on trunk (north-facing left side) -->
+            <ellipse cx="145" cy="260" rx="7" ry="16" fill="#5a8a3a" opacity="0.22"/>
+            <ellipse cx="148" cy="286" rx="9" ry="10" fill="#6a9a4a" opacity="0.2"/>
+            <ellipse cx="142" cy="215" rx="5" ry="9" fill="#4a7a2a" opacity="0.16"/>
+            <!-- Lichen spots -->
+            <circle cx="238" cy="235" r="5" fill="#8a9a6a" opacity="0.14"/>
+            <circle cx="168" cy="190" r="3.5" fill="#8a9a6a" opacity="0.11"/>
+            <circle cx="248" cy="270" r="4" fill="#8a9a6a" opacity="0.1"/>
+          </g>
+          <!-- ══════ MUSHROOM CLUSTER — arching bouquet from one point ══════ -->
+          <!-- All stems originate from trunk ~x200 y260, arcing outward -->
+          <g filter="url(#honey-shadow)">
+            <!-- ── Back row (4 small, arcing outward, partially hidden) ── -->
+            <!-- Back 1: arcs hard left -->
+            <path d="M192 258 Q180 248 164 230 Q158 222 155 216 L160 213 Q163 220 170 230 Q183 244 196 254 Z" fill="url(#honey-stem2)"/>
+            <path d="M147 218 Q145 213 147 208 Q151 203 155 201 Q159 203 161 207 Q163 212 161 217 Q156 220 150 219 Z" fill="url(#honey-cap)" opacity="0.8"/>
+            <ellipse cx="168" cy="236" rx="4" ry="1.8" fill="#f0e8d0" opacity="0.4" stroke="#c8b890" stroke-width="0.3" transform="rotate(-35 168 236)"/>
+
+            <!-- Back 2: arcs moderate left -->
+            <path d="M196 258 Q188 245 180 226 Q176 216 175 210 L180 208 Q182 214 186 224 Q194 242 200 254 Z" fill="url(#honey-stem2)"/>
+            <path d="M168 212 Q166 206 168 200 Q172 194 178 192 Q183 194 186 199 Q188 205 186 211 Q180 215 173 214 Z" fill="url(#honey-cap)"/>
+            <path d="M170 208 Q170 204 172 200 Q174 196 178 194 Q177 198 176 202 Q175 206 175 208 Z" fill="url(#honey-shine)" opacity="0.35"/>
+            <ellipse cx="183" cy="220" rx="5" ry="1.8" fill="#f0e8d0" opacity="0.45" stroke="#c8b890" stroke-width="0.3" transform="rotate(-20 183 220)"/>
+
+            <!-- Back 3: arcs moderate right -->
+            <path d="M204 258 Q212 245 220 226 Q224 216 225 210 L220 208 Q218 214 214 224 Q206 242 200 254 Z" fill="url(#honey-stem2)"/>
+            <path d="M232 212 Q234 206 232 200 Q228 194 222 192 Q217 194 214 199 Q212 205 214 211 Q220 215 227 214 Z" fill="url(#honey-cap)"/>
+            <path d="M230 208 Q230 204 228 200 Q226 196 222 194 Q223 198 224 202 Q225 206 225 208 Z" fill="url(#honey-shine)" opacity="0.35"/>
+            <ellipse cx="217" cy="220" rx="5" ry="1.8" fill="#f0e8d0" opacity="0.45" stroke="#c8b890" stroke-width="0.3" transform="rotate(20 217 220)"/>
+
+            <!-- Back 4: arcs hard right -->
+            <path d="M208 258 Q220 248 236 230 Q242 222 245 216 L240 213 Q237 220 230 230 Q217 244 204 254 Z" fill="url(#honey-stem2)"/>
+            <path d="M253 218 Q255 213 253 208 Q249 203 245 201 Q241 203 239 207 Q237 212 239 217 Q244 220 250 219 Z" fill="url(#honey-cap)" opacity="0.8"/>
+            <ellipse cx="232" cy="236" rx="4" ry="1.8" fill="#f0e8d0" opacity="0.4" stroke="#c8b890" stroke-width="0.3" transform="rotate(35 232 236)"/>
+
+            <!-- ── Hero row: 3 mushrooms, arcing outward like a fan ── -->
+
+            <!-- Hero LEFT — arcs left -->
+            <path d="M194 262 Q182 252 164 228 Q157 218 154 210 L160 206 Q164 214 172 228 Q186 248 198 258 Z" fill="url(#honey-stem)"/>
+            <g stroke="#b0a070" fill="none" opacity="0.25">
+              <path d="M196 260 Q185 250 168 228 Q162 220 159 212" stroke-width="0.5"/>
+            </g>
+            <!-- Cap ~45px wide -->
+            <path d="M136 214 Q134 206 138 196 Q144 186 155 182 Q163 180 171 184 Q180 188 184 198 Q186 204 184 212 Q176 218 160 219 Q142 218 136 214 Z" fill="url(#honey-cap)"/>
+            <ellipse cx="158" cy="190" rx="5" ry="3" fill="#b89028" opacity="0.25" transform="rotate(-8 158 190)"/>
+            <path d="M142 210 Q140 204 144 196 Q148 190 155 186 Q154 190 152 196 Q150 204 148 210 Z" fill="url(#honey-shine)" opacity="0.45"/>
+            <g fill="#8a6818" opacity="0.34">
+              <ellipse cx="154" cy="188" rx="1.6" ry="0.8" transform="rotate(-8 154 188)"/>
+              <ellipse cx="162" cy="186" rx="1.4" ry="0.7" transform="rotate(-2 162 186)"/>
+              <ellipse cx="146" cy="194" rx="1.5" ry="0.7" transform="rotate(-14 146 194)"/>
+              <ellipse cx="156" cy="193" rx="1.3" ry="0.7" transform="rotate(-4 156 193)"/>
+              <ellipse cx="166" cy="194" rx="1.2" ry="0.6" transform="rotate(6 166 194)"/>
+              <ellipse cx="142" cy="202" rx="1.2" ry="0.6" transform="rotate(-16 142 202)"/>
+              <ellipse cx="154" cy="200" rx="1.1" ry="0.6" transform="rotate(-6 154 200)"/>
+              <ellipse cx="166" cy="200" rx="1" ry="0.5" transform="rotate(4 166 200)"/>
+              <ellipse cx="176" cy="202" rx="0.9" ry="0.5" transform="rotate(10 176 202)"/>
+            </g>
+            <path d="M173 185 Q181 190 184 200 Q186 206 184 212 L180 214 Q181 206 178 200 Q176 192 173 185 Z" fill="#705010" opacity="0.12"/>
+            <path d="M136 214 Q142 218 160 219 Q176 218 184 212 Q178 216 160 217 Q142 216 136 214 Z" fill="#806018" opacity="0.16"/>
+            <g stroke="#c8a848" stroke-width="0.5" fill="none" opacity="0.38">
+              <path d="M140 214 L148 208 L158 214"/>
+              <path d="M158 214 L168 208 L178 212"/>
+            </g>
+            <ellipse cx="168" cy="228" rx="7" ry="2.8" fill="#ede6d0" stroke="#c8c0a0" stroke-width="0.5" transform="rotate(-35 168 228)"/>
+
+            <!-- Hero CENTER — nearly vertical, tallest -->
+            <path d="M197 262 Q195 248 196 224 Q197 214 200 206 L209 206 Q212 214 213 224 Q214 248 212 262 Z" fill="url(#honey-stem)"/>
+            <g stroke="#b0a070" fill="none" opacity="0.25">
+              <path d="M201 258 Q201 238 202 214" stroke-width="0.5"/>
+              <path d="M208 258 Q209 238 208 214" stroke-width="0.5"/>
+            </g>
+            <path d="M197 262 Q196 256 197 250 L212 250 Q213 256 212 262 Z" fill="#706038" opacity="0.15"/>
+            <!-- Cap ~48px wide -->
+            <path d="M188 214 Q186 204 190 192 Q196 180 206 176 Q214 174 222 178 Q232 184 236 194 Q239 204 236 214 Q228 222 212 223 Q194 222 188 214 Z" fill="url(#honey-cap2)"/>
+            <ellipse cx="212" cy="184" rx="6" ry="3.5" fill="#c09830" opacity="0.24"/>
+            <path d="M194 210 Q192 204 196 194 Q200 186 206 180 Q204 186 202 194 Q200 202 198 210 Z" fill="url(#honey-shine)" opacity="0.45"/>
+            <g fill="#907020" opacity="0.34">
+              <ellipse cx="208" cy="183" rx="1.6" ry="0.8"/>
+              <ellipse cx="216" cy="182" rx="1.4" ry="0.7" transform="rotate(4 216 182)"/>
+              <ellipse cx="200" cy="190" rx="1.4" ry="0.7" transform="rotate(-6 200 190)"/>
+              <ellipse cx="212" cy="188" rx="1.2" ry="0.7"/>
+              <ellipse cx="222" cy="190" rx="1.1" ry="0.6" transform="rotate(6 222 190)"/>
+              <ellipse cx="196" cy="198" rx="1.2" ry="0.6" transform="rotate(-10 196 198)"/>
+              <ellipse cx="206" cy="196" rx="1.1" ry="0.6"/>
+              <ellipse cx="218" cy="196" rx="1.1" ry="0.6" transform="rotate(4 218 196)"/>
+              <ellipse cx="228" cy="198" rx="1" ry="0.5" transform="rotate(8 228 198)"/>
+            </g>
+            <path d="M226 180 Q234 186 236 196 Q239 204 236 214 L232 216 Q234 206 232 198 Q228 188 226 180 Z" fill="#705010" opacity="0.11"/>
+            <path d="M188 214 Q194 222 212 223 Q228 222 236 214 Q230 218 212 220 Q196 218 188 214 Z" fill="#806018" opacity="0.15"/>
+            <g stroke="#c8a848" stroke-width="0.55" fill="none" opacity="0.42">
+              <path d="M192 214 L200 208 L212 214"/>
+              <path d="M212 214 L222 208 L232 212"/>
+            </g>
+            <ellipse cx="205" cy="226" rx="9" ry="3" fill="#ede6d0" stroke="#c8c0a0" stroke-width="0.5"/>
+            <path d="M196 226 Q200 229 205 230 Q210 229 214 226" fill="#e8e0c8" stroke="#c0b898" stroke-width="0.3" opacity="0.45"/>
+
+            <!-- Hero RIGHT — arcs right -->
+            <path d="M206 262 Q218 252 236 228 Q243 218 246 210 L240 206 Q236 214 228 228 Q214 248 202 258 Z" fill="url(#honey-stem)"/>
+            <g stroke="#b0a070" fill="none" opacity="0.25">
+              <path d="M204 260 Q215 250 232 228 Q238 220 241 212" stroke-width="0.5"/>
+            </g>
+            <!-- Cap ~45px wide -->
+            <path d="M242 214 Q240 206 244 196 Q250 186 261 182 Q269 180 277 184 Q286 188 290 198 Q292 204 290 212 Q282 218 266 219 Q248 218 242 214 Z" fill="url(#honey-cap2)"/>
+            <ellipse cx="264" cy="190" rx="5" ry="3" fill="#c09830" opacity="0.24" transform="rotate(8 264 190)"/>
+            <path d="M250 210 Q248 204 252 196 Q256 190 261 186 Q260 190 258 196 Q256 204 254 210 Z" fill="url(#honey-shine)" opacity="0.42"/>
+            <g fill="#907020" opacity="0.32">
+              <ellipse cx="262" cy="188" rx="1.6" ry="0.8" transform="rotate(6 262 188)"/>
+              <ellipse cx="270" cy="186" rx="1.4" ry="0.7" transform="rotate(10 270 186)"/>
+              <ellipse cx="254" cy="194" rx="1.5" ry="0.7" transform="rotate(-4 254 194)"/>
+              <ellipse cx="264" cy="193" rx="1.3" ry="0.7" transform="rotate(4 264 193)"/>
+              <ellipse cx="274" cy="194" rx="1.1" ry="0.6" transform="rotate(12 274 194)"/>
+              <ellipse cx="250" cy="202" rx="1.2" ry="0.6" transform="rotate(-8 250 202)"/>
+              <ellipse cx="262" cy="200" rx="1.1" ry="0.6"/>
+              <ellipse cx="274" cy="200" rx="1" ry="0.5" transform="rotate(8 274 200)"/>
+              <ellipse cx="284" cy="202" rx="0.9" ry="0.5" transform="rotate(14 284 202)"/>
+            </g>
+            <path d="M279 185 Q287 190 290 200 Q292 206 290 212 L286 214 Q287 206 284 200 Q282 192 279 185 Z" fill="#705010" opacity="0.11"/>
+            <path d="M242 214 Q248 218 266 219 Q282 218 290 212 Q284 216 266 217 Q250 216 242 214 Z" fill="#806018" opacity="0.15"/>
+            <g stroke="#c8a848" stroke-width="0.5" fill="none" opacity="0.38">
+              <path d="M246 214 L254 208 L264 214"/>
+              <path d="M264 214 L274 208 L284 212"/>
+            </g>
+            <ellipse cx="238" cy="228" rx="7" ry="2.8" fill="#ede6d0" stroke="#c8c0a0" stroke-width="0.5" transform="rotate(35 238 228)"/>
+
+            <!-- ── Front row: 2 medium mushrooms in front of heroes ── -->
+
+            <!-- Front LEFT — arcs moderately left, shorter stem -->
+            <path d="M195 264 Q186 256 172 240 Q166 232 164 226 L170 223 Q173 229 178 238 Q190 252 198 261 Z" fill="url(#honey-stem)"/>
+            <g stroke="#b0a070" fill="none" opacity="0.22">
+              <path d="M196 262 Q188 254 176 240 Q172 234 170 228" stroke-width="0.4"/>
+            </g>
+            <!-- Cap ~38px wide -->
+            <path d="M148 230 Q146 224 150 216 Q155 208 164 204 Q170 203 177 206 Q184 210 188 218 Q190 224 188 230 Q180 236 168 236 Q152 236 148 230 Z" fill="url(#honey-cap)"/>
+            <ellipse cx="166" cy="212" rx="4" ry="2.5" fill="#b89028" opacity="0.22" transform="rotate(-8 166 212)"/>
+            <path d="M153 226 Q152 222 154 216 Q158 210 164 208 Q162 212 160 218 Q158 224 157 226 Z" fill="url(#honey-shine)" opacity="0.4"/>
+            <g fill="#8a6818" opacity="0.32">
+              <ellipse cx="163" cy="210" rx="1.3" ry="0.6" transform="rotate(-8 163 210)"/>
+              <ellipse cx="170" cy="209" rx="1.1" ry="0.6" transform="rotate(-2 170 209)"/>
+              <ellipse cx="158" cy="216" rx="1.2" ry="0.6" transform="rotate(-12 158 216)"/>
+              <ellipse cx="167" cy="215" rx="1" ry="0.5"/>
+              <ellipse cx="175" cy="216" rx="0.9" ry="0.5" transform="rotate(6 175 216)"/>
+              <ellipse cx="155" cy="222" rx="1" ry="0.5" transform="rotate(-14 155 222)"/>
+              <ellipse cx="166" cy="221" rx="0.9" ry="0.5"/>
+              <ellipse cx="178" cy="222" rx="0.8" ry="0.4" transform="rotate(8 178 222)"/>
+            </g>
+            <path d="M148 230 Q152 236 168 236 Q180 236 188 230 Q182 234 168 234 Q154 234 148 230 Z" fill="#806018" opacity="0.14"/>
+            <g stroke="#c8a848" stroke-width="0.45" fill="none" opacity="0.35">
+              <path d="M152 230 L160 224 L168 230"/>
+              <path d="M168 230 L176 224 L184 228"/>
+            </g>
+            <ellipse cx="174" cy="240" rx="6" ry="2.4" fill="#ede6d0" stroke="#c8b890" stroke-width="0.4" transform="rotate(-28 174 240)"/>
+
+            <!-- Front RIGHT — arcs moderately right, shorter stem -->
+            <path d="M209 264 Q218 256 232 240 Q238 232 240 226 L234 223 Q231 229 226 238 Q214 252 206 261 Z" fill="url(#honey-stem)"/>
+            <g stroke="#b0a070" fill="none" opacity="0.22">
+              <path d="M208 262 Q216 254 228 240 Q232 234 234 228" stroke-width="0.4"/>
+            </g>
+            <!-- Cap ~38px wide -->
+            <path d="M220 230 Q218 224 222 216 Q227 208 236 204 Q242 203 249 206 Q256 210 260 218 Q262 224 260 230 Q252 236 240 236 Q224 236 220 230 Z" fill="url(#honey-cap2)"/>
+            <ellipse cx="238" cy="212" rx="4" ry="2.5" fill="#c09830" opacity="0.22" transform="rotate(8 238 212)"/>
+            <path d="M227 226 Q226 222 228 216 Q232 210 236 208 Q235 212 234 218 Q232 224 231 226 Z" fill="url(#honey-shine)" opacity="0.4"/>
+            <g fill="#8a6818" opacity="0.32">
+              <ellipse cx="237" cy="210" rx="1.3" ry="0.6" transform="rotate(8 237 210)"/>
+              <ellipse cx="244" cy="209" rx="1.1" ry="0.6" transform="rotate(2 244 209)"/>
+              <ellipse cx="232" cy="216" rx="1.2" ry="0.6" transform="rotate(-4 232 216)"/>
+              <ellipse cx="240" cy="215" rx="1" ry="0.5"/>
+              <ellipse cx="248" cy="216" rx="0.9" ry="0.5" transform="rotate(10 248 216)"/>
+              <ellipse cx="228" cy="222" rx="1" ry="0.5" transform="rotate(-6 228 222)"/>
+              <ellipse cx="240" cy="221" rx="0.9" ry="0.5"/>
+              <ellipse cx="252" cy="222" rx="0.8" ry="0.4" transform="rotate(12 252 222)"/>
+            </g>
+            <path d="M220 230 Q224 236 240 236 Q252 236 260 230 Q254 234 240 234 Q226 234 220 230 Z" fill="#806018" opacity="0.14"/>
+            <g stroke="#c8a848" stroke-width="0.45" fill="none" opacity="0.35">
+              <path d="M224 230 L232 224 L240 230"/>
+              <path d="M240 230 L248 224 L256 228"/>
+            </g>
+            <ellipse cx="230" cy="240" rx="6" ry="2.4" fill="#ede6d0" stroke="#c8b890" stroke-width="0.4" transform="rotate(28 230 240)"/>
+
+            <!-- ── Baby mushrooms arcing outward (6 babies) ── -->
+            <!-- Baby far-left -->
+            <path d="M193 264 Q186 260 178 252 Q174 246 172 242 L176 240 Q178 244 182 250 Q190 258 196 262 Z" fill="url(#honey-stem2)"/>
+            <ellipse cx="172" cy="240" rx="4.5" ry="3" fill="url(#honey-cap2)" transform="rotate(-25 172 240)"/>
+            <ellipse cx="171" cy="239" rx="1.8" ry="1" fill="#f0d868" opacity="0.25" transform="rotate(-25 171 239)"/>
+
+            <!-- Baby center-left -->
+            <path d="M196 264 Q193 260 188 250 Q186 246 186 242 L190 240 Q190 244 192 248 Q196 256 199 262 Z" fill="url(#honey-stem2)"/>
+            <path d="M183 244 Q182 240 184 236 Q187 232 191 231 Q194 233 196 237 Q197 241 195 244 Z" fill="url(#honey-cap2)"/>
+
+            <!-- Baby inner-left -->
+            <path d="M199 264 Q198 260 196 254 Q195 250 195 247 L199 246 Q199 249 200 254 Q201 258 202 263 Z" fill="url(#honey-stem2)"/>
+            <path d="M192 249 Q191 245 193 242 Q196 239 199 238 Q201 240 202 243 Q203 247 201 249 Z" fill="url(#honey-cap2)"/>
+
+            <!-- Baby inner-right -->
+            <path d="M205 264 Q206 260 208 254 Q209 250 209 247 L205 246 Q205 249 204 254 Q203 258 202 263 Z" fill="url(#honey-stem2)"/>
+            <path d="M212 249 Q213 245 211 242 Q208 239 205 238 Q203 240 202 243 Q201 247 203 249 Z" fill="url(#honey-cap2)"/>
+
+            <!-- Baby center-right -->
+            <path d="M208 264 Q211 260 216 250 Q218 246 218 242 L214 240 Q214 244 212 248 Q208 256 205 262 Z" fill="url(#honey-stem2)"/>
+            <path d="M221 244 Q222 240 220 236 Q217 232 213 231 Q210 233 208 237 Q207 241 209 244 Z" fill="url(#honey-cap2)"/>
+
+            <!-- Baby far-right -->
+            <path d="M211 264 Q218 260 226 252 Q230 246 232 242 L228 240 Q226 244 222 250 Q214 258 208 262 Z" fill="url(#honey-stem2)"/>
+            <ellipse cx="232" cy="240" rx="4.5" ry="3" fill="url(#honey-cap2)" transform="rotate(25 232 240)"/>
+            <ellipse cx="233" cy="239" rx="1.8" ry="1" fill="#f0d868" opacity="0.25" transform="rotate(25 233 239)"/>
+          </g>
+          <!-- ══════ RHIZOMORPHS (dark bootlaces on bark) ══════ -->
+          <g stroke="#1a1008" fill="none" opacity="0.28">
+            <path d="M140 265 Q128 262 118 268 Q110 278 106 292" stroke-width="2.2"/>
+            <path d="M142 280 Q132 278 124 284 Q118 292 116 300" stroke-width="1.6"/>
+            <path d="M260 268 Q272 265 282 272 Q290 282 294 296" stroke-width="2"/>
+            <path d="M258 282 Q268 280 276 286 Q282 294 286 300" stroke-width="1.4"/>
+          </g>
+          <!-- (haze removed for clarity) -->
+          <!-- Grass tufts -->
+          <g opacity="0.3" fill="none">
+            <path d="M90 285 Q92 273 88 264" stroke="#3a6828" stroke-width="1.3"/>
+            <path d="M94 285 Q95 274 98 265" stroke="#4a7838" stroke-width="1.1"/>
+            <path d="M310 284 Q308 273 312 264" stroke="#3a6828" stroke-width="1.2"/>
+            <path d="M314 284 Q316 275 313 266" stroke="#4a7838" stroke-width="1"/>
+          </g>
+        </svg>
+      SVG
     }
   }.freeze
 

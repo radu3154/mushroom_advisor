@@ -1153,4 +1153,454 @@ class ScoringEngineTest < Minitest::Test
     result = ScoringEngine.new("saffron_milkcap", w).call
     assert result[:best_time]&.include?("right now"), "Within ideal delay should say 'right now' (got: #{result[:best_time]})"
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Parasol Mushroom (Macrolepiota procera) — species tests
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_parasol_exists_in_catalog
+    sp = Species.find("parasol")
+    assert sp, "parasol should be in the catalog"
+    assert_equal "Parasol Mushroom", sp[:name]
+    assert_equal "Pălăria Șarpelui", sp[:name_ro]
+    assert_equal "Macrolepiota procera", sp[:latin]
+  end
+
+  def test_parasol_season_months
+    sp = Species.find("parasol")
+    assert_equal [6, 7, 8, 9, 10], sp[:season_months]
+  end
+
+  def test_parasol_peak_months
+    sp = Species.find("parasol")
+    assert_equal [8, 9, 10], sp[:peak_months]
+  end
+
+  def test_parasol_peak_september_conditions
+    # September, ideal temp+rain+timing → near-perfect score
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w).call
+    assert result[:score] >= 80, "Peak September conditions should score excellent (got #{result[:score]})"
+    assert_equal "excellent", result[:tier]
+  end
+
+  def test_parasol_peak_august
+    w = weather(temp: 20, rain: 30, days_since: 5, month: 8)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 30, result[:breakdown][:season], "August should be peak season (30/30)"
+  end
+
+  def test_parasol_peak_october
+    w = weather(temp: 16, rain: 25, days_since: 4, month: 10)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 30, result[:breakdown][:season], "October should be peak season (30/30)"
+  end
+
+  def test_parasol_secondary_june
+    w = weather(temp: 20, rain: 30, days_since: 4, month: 6)
+    result = ScoringEngine.new("parasol", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "June should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_parasol_secondary_july
+    w = weather(temp: 22, rain: 35, days_since: 4, month: 7)
+    result = ScoringEngine.new("parasol", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "July should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_parasol_peak_scores_higher_than_secondary
+    w_peak = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    w_secondary = weather(temp: 18, rain: 30, days_since: 5, month: 6)
+    peak_result = ScoringEngine.new("parasol", w_peak).call
+    secondary_result = ScoringEngine.new("parasol", w_secondary).call
+    assert peak_result[:score] > secondary_result[:score],
+      "Peak month (#{peak_result[:score]}) should beat secondary (#{secondary_result[:score]})"
+  end
+
+  def test_parasol_out_of_season_winter
+    w = weather(temp: 5, rain: 20, days_since: 3, month: 12)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_parasol_out_of_season_spring
+    w = weather(temp: 15, rain: 20, days_since: 4, month: 3)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_parasol_too_cold_kills_score
+    # abs_min = 7°C, at 5°C → temp hard-kill
+    w = weather(temp: 5, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 0, result[:score], "Below abs_min temp should hard-kill total to 0"
+  end
+
+  def test_parasol_warm_summer_scores_well
+    # At 22°C (ideal_max) in August with good rain → should score high
+    w = weather(temp: 22, rain: 30, days_since: 5, month: 8)
+    result = ScoringEngine.new("parasol", w).call
+    assert result[:breakdown][:temperature] >= 24, "At ideal_max temp should score well (got #{result[:breakdown][:temperature]})"
+  end
+
+  def test_parasol_temp_range
+    sp = Species.find("parasol")
+    assert_equal 14, sp[:temp_range][:ideal_min]
+    assert_equal 22, sp[:temp_range][:ideal_max]
+    assert_equal 7, sp[:temp_range][:abs_min]
+    assert_equal 28, sp[:temp_range][:abs_max]
+  end
+
+  def test_parasol_rain_range
+    sp = Species.find("parasol")
+    assert_equal 15, sp[:rain_range][:ideal_min]
+    assert_equal 50, sp[:rain_range][:ideal_max]
+    assert_equal 5, sp[:rain_range][:abs_min]
+    assert_equal 75, sp[:rain_range][:abs_max]
+  end
+
+  def test_parasol_terrain_grassland_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("parasol", "grassland")
+  end
+
+  def test_parasol_terrain_deciduous_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("parasol", "deciduous")
+  end
+
+  def test_parasol_terrain_park_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("parasol", "park")
+  end
+
+  def test_parasol_terrain_mixed_partial
+    assert_equal :partial, ScoringEngine.terrain_match("parasol", "mixed")
+  end
+
+  def test_parasol_terrain_coniferous_bad
+    assert_equal :bad, ScoringEngine.terrain_match("parasol", "coniferous")
+  end
+
+  def test_parasol_terrain_wetland_bad
+    assert_equal :bad, ScoringEngine.terrain_match("parasol", "wetland")
+  end
+
+  def test_parasol_terrain_farmland_partial
+    assert_equal :partial, ScoringEngine.terrain_match("parasol", "farmland")
+  end
+
+  def test_parasol_terrain_orchard_partial
+    assert_equal :partial, ScoringEngine.terrain_match("parasol", "orchard")
+  end
+
+  def test_parasol_romanian_labels
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w, lang: "ro").call
+    assert_equal "EXCELENT", result[:label]
+  end
+
+  def test_parasol_romanian_out_of_season
+    w = weather(temp: 15, rain: 20, days_since: 3, month: 12)
+    result = ScoringEngine.new("parasol", w, lang: "ro").call
+    assert_equal "ÎN AFARA SEZONULUI", result[:label]
+  end
+
+  def test_parasol_tips_returned
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w).call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.downcase.include?("meadow") }, "English tips should mention meadows"
+  end
+
+  def test_parasol_tips_ro_returned
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w, lang: "ro").call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.include?("Pajiști") }, "Romanian tips should mention meadows (Pajiști)"
+  end
+
+  def test_parasol_has_svg
+    sp = Species.find("parasol")
+    assert sp[:svg], "Species should have SVG"
+    assert sp[:svg].include?("<svg"), "SVG should be valid XML"
+    assert sp[:svg].include?("par-"), "SVG should use par- namespaced ids"
+  end
+
+  def test_parasol_has_color_scheme
+    sp = Species.find("parasol")
+    assert sp[:color], "Should have main color"
+    assert sp[:gradient_from], "Should have gradient_from"
+    assert sp[:gradient_to], "Should have gradient_to"
+  end
+
+  def test_parasol_temp_window
+    sp = Species.find("parasol")
+    assert_equal 7, sp[:temp_window]
+  end
+
+  def test_parasol_explanation_four_parts
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w, lang: "en").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Explanation should have 4 parts separated by ' · '"
+  end
+
+  def test_parasol_season_window_from_november
+    # Out of season in November → should suggest waiting for June
+    w = weather(temp: 10, rain: 20, days_since: 3, month: 11)
+    result = ScoringEngine.new("parasol", w, lang: "en").call
+    assert result[:best_time].include?("June"), "Out of season in Nov should suggest June (got: #{result[:best_time]})"
+  end
+
+  def test_parasol_season_window_from_february
+    w = weather(temp: 5, rain: 15, days_since: 3, month: 2)
+    result = ScoringEngine.new("parasol", w, lang: "en").call
+    assert result[:best_time].include?("June"), "Out of season in Feb should suggest June (got: #{result[:best_time]})"
+  end
+
+  def test_parasol_season_window_ro
+    w = weather(temp: 5, rain: 15, days_since: 3, month: 12)
+    result = ScoringEngine.new("parasol", w, lang: "ro").call
+    assert result[:best_time].start_with?("Așteaptă"), "Romanian best_time should start with 'Așteaptă'"
+    assert result[:best_time].include?("Iunie"), "Should suggest Iunie in Romanian (got: #{result[:best_time]})"
+  end
+
+  def test_parasol_best_time_in_sweet_spot
+    w = weather(temp: 18, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("parasol", w).call
+    assert result[:best_time]&.include?("right now"), "Within ideal delay should say 'right now' (got: #{result[:best_time]})"
+  end
+
+  def test_parasol_delay_ideal_range
+    sp = Species.find("parasol")
+    assert_equal 3, sp[:delay_days][:ideal_min]
+    assert_equal 7, sp[:delay_days][:ideal_max]
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Honey Fungus (Armillaria mellea) — species tests
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_honey_fungus_exists_in_catalog
+    sp = Species.find("honey_fungus")
+    assert sp, "honey_fungus should be in the catalog"
+    assert_equal "Honey Fungus", sp[:name]
+    assert_equal "Ghebe", sp[:name_ro]
+    assert_equal "Armillaria mellea", sp[:latin]
+  end
+
+  def test_honey_fungus_season_months
+    sp = Species.find("honey_fungus")
+    assert_equal [8, 9, 10, 11], sp[:season_months]
+  end
+
+  def test_honey_fungus_peak_months
+    sp = Species.find("honey_fungus")
+    assert_equal [9, 10], sp[:peak_months]
+  end
+
+  def test_honey_fungus_peak_september_conditions
+    # September, ideal temp+rain+timing → near-perfect score
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert result[:score] >= 80, "Peak September conditions should score excellent (got #{result[:score]})"
+    assert_equal "excellent", result[:tier]
+  end
+
+  def test_honey_fungus_peak_september_season_score
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 30, result[:breakdown][:season], "September should be peak season (30/30)"
+  end
+
+  def test_honey_fungus_peak_october
+    w = weather(temp: 10, rain: 25, days_since: 4, month: 10)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 30, result[:breakdown][:season], "October should be peak season (30/30)"
+  end
+
+  def test_honey_fungus_secondary_august
+    w = weather(temp: 16, rain: 30, days_since: 4, month: 8)
+    result = ScoringEngine.new("honey_fungus", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "August should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_honey_fungus_secondary_november
+    w = weather(temp: 8, rain: 25, days_since: 5, month: 11)
+    result = ScoringEngine.new("honey_fungus", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "November should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_honey_fungus_peak_scores_higher_than_secondary
+    w_peak = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    w_secondary = weather(temp: 13, rain: 30, days_since: 5, month: 8)
+    peak_result = ScoringEngine.new("honey_fungus", w_peak).call
+    secondary_result = ScoringEngine.new("honey_fungus", w_secondary).call
+    assert peak_result[:score] > secondary_result[:score],
+      "Peak month (#{peak_result[:score]}) should beat secondary (#{secondary_result[:score]})"
+  end
+
+  def test_honey_fungus_out_of_season_winter
+    w = weather(temp: 2, rain: 20, days_since: 3, month: 1)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_honey_fungus_out_of_season_spring
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_honey_fungus_too_cold_kills_score
+    # abs_min = 3°C, at 1°C → temp hard-kill
+    w = weather(temp: 1, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 0, result[:score], "Below abs_min temp should hard-kill total to 0"
+  end
+
+  def test_honey_fungus_too_hot_kills_score
+    # abs_max = 24°C, at 26°C → temp hard-kill
+    w = weather(temp: 26, rain: 25, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 0, result[:score], "Above abs_max temp should hard-kill total to 0"
+  end
+
+  def test_honey_fungus_temp_range
+    sp = Species.find("honey_fungus")
+    assert_equal 8, sp[:temp_range][:ideal_min]
+    assert_equal 18, sp[:temp_range][:ideal_max]
+    assert_equal 3, sp[:temp_range][:abs_min]
+    assert_equal 24, sp[:temp_range][:abs_max]
+  end
+
+  def test_honey_fungus_rain_range
+    sp = Species.find("honey_fungus")
+    assert_equal 15, sp[:rain_range][:ideal_min]
+    assert_equal 45, sp[:rain_range][:ideal_max]
+    assert_equal 5, sp[:rain_range][:abs_min]
+    assert_equal 70, sp[:rain_range][:abs_max]
+  end
+
+  def test_honey_fungus_terrain_deciduous_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("honey_fungus", "deciduous")
+  end
+
+  def test_honey_fungus_terrain_mixed_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("honey_fungus", "mixed")
+  end
+
+  def test_honey_fungus_terrain_coniferous_partial
+    assert_equal :partial, ScoringEngine.terrain_match("honey_fungus", "coniferous")
+  end
+
+  def test_honey_fungus_terrain_park_partial
+    assert_equal :partial, ScoringEngine.terrain_match("honey_fungus", "park")
+  end
+
+  def test_honey_fungus_terrain_orchard_partial
+    assert_equal :partial, ScoringEngine.terrain_match("honey_fungus", "orchard")
+  end
+
+  def test_honey_fungus_terrain_scrubland_partial
+    assert_equal :partial, ScoringEngine.terrain_match("honey_fungus", "scrubland")
+  end
+
+  def test_honey_fungus_terrain_grassland_bad
+    assert_equal :bad, ScoringEngine.terrain_match("honey_fungus", "grassland")
+  end
+
+  def test_honey_fungus_terrain_water_bad
+    assert_equal :bad, ScoringEngine.terrain_match("honey_fungus", "water")
+  end
+
+  def test_honey_fungus_romanian_labels
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w, lang: "ro").call
+    assert_equal "EXCELENT", result[:label]
+  end
+
+  def test_honey_fungus_romanian_out_of_season
+    w = weather(temp: 10, rain: 20, days_since: 3, month: 3)
+    result = ScoringEngine.new("honey_fungus", w, lang: "ro").call
+    assert_equal "ÎN AFARA SEZONULUI", result[:label]
+  end
+
+  def test_honey_fungus_tips_returned
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.downcase.include?("stump") }, "English tips should mention stumps"
+  end
+
+  def test_honey_fungus_tips_ro_returned
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w, lang: "ro").call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.include?("cioate") }, "Romanian tips should mention stumps (cioate)"
+  end
+
+  def test_honey_fungus_has_svg
+    sp = Species.find("honey_fungus")
+    assert sp[:svg], "Species should have SVG"
+    assert sp[:svg].include?("<svg"), "SVG should be valid XML"
+    assert sp[:svg].include?("honey-"), "SVG should use honey- namespaced ids"
+  end
+
+  def test_honey_fungus_has_color_scheme
+    sp = Species.find("honey_fungus")
+    assert sp[:color], "Should have main color"
+    assert sp[:gradient_from], "Should have gradient_from"
+    assert sp[:gradient_to], "Should have gradient_to"
+  end
+
+  def test_honey_fungus_temp_window
+    sp = Species.find("honey_fungus")
+    assert_equal 5, sp[:temp_window]
+  end
+
+  def test_honey_fungus_explanation_four_parts
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w, lang: "en").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Explanation should have 4 parts separated by ' · '"
+  end
+
+  def test_honey_fungus_season_window_from_december
+    # Out of season in December → should suggest waiting for August
+    w = weather(temp: 2, rain: 20, days_since: 3, month: 12)
+    result = ScoringEngine.new("honey_fungus", w, lang: "en").call
+    assert result[:best_time].include?("August"), "Out of season in Dec should suggest August (got: #{result[:best_time]})"
+  end
+
+  def test_honey_fungus_season_window_from_march
+    w = weather(temp: 8, rain: 15, days_since: 3, month: 3)
+    result = ScoringEngine.new("honey_fungus", w, lang: "en").call
+    assert result[:best_time].include?("August"), "Out of season in Mar should suggest August (got: #{result[:best_time]})"
+  end
+
+  def test_honey_fungus_season_window_ro
+    w = weather(temp: 2, rain: 15, days_since: 3, month: 1)
+    result = ScoringEngine.new("honey_fungus", w, lang: "ro").call
+    assert result[:best_time].start_with?("Așteaptă"), "Romanian best_time should start with 'Așteaptă'"
+    assert result[:best_time].include?("August"), "Should suggest August in Romanian (got: #{result[:best_time]})"
+  end
+
+  def test_honey_fungus_best_time_in_sweet_spot
+    w = weather(temp: 13, rain: 30, days_since: 5, month: 9)
+    result = ScoringEngine.new("honey_fungus", w).call
+    assert result[:best_time]&.include?("right now"), "Within ideal delay should say 'right now' (got: #{result[:best_time]})"
+  end
+
+  def test_honey_fungus_delay_ideal_range
+    sp = Species.find("honey_fungus")
+    assert_equal 3, sp[:delay_days][:ideal_min]
+    assert_equal 7, sp[:delay_days][:ideal_max]
+  end
 end
