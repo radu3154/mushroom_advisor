@@ -939,4 +939,218 @@ class ScoringEngineTest < Minitest::Test
     assert_includes explanation, "precipit", "RO explanation should mention rain"
     assert_includes explanation, "ploaie", "RO explanation should mention timing"
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Saffron Milk Cap (Lactarius deliciosus) — species tests
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_saffron_milkcap_exists_in_catalog
+    sp = Species.find("saffron_milkcap")
+    assert sp, "saffron_milkcap should be in the catalog"
+    assert_equal "Saffron Milk Cap", sp[:name]
+    assert_equal "Râșcov", sp[:name_ro]
+    assert_equal "Lactarius deliciosus", sp[:latin]
+  end
+
+  def test_saffron_milkcap_season_months
+    sp = Species.find("saffron_milkcap")
+    assert_equal [8, 9, 10, 11], sp[:season_months]
+  end
+
+  def test_saffron_milkcap_peak_months
+    sp = Species.find("saffron_milkcap")
+    assert_equal [9, 10], sp[:peak_months]
+  end
+
+  def test_saffron_milkcap_peak_october_conditions
+    # October, ideal temp+rain+timing → near-perfect score
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert result[:score] >= 80, "Peak October conditions should score excellent (got #{result[:score]})"
+    assert_equal "excellent", result[:tier]
+  end
+
+  def test_saffron_milkcap_peak_september
+    w = weather(temp: 14, rain: 30, days_since: 4, month: 9)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert_equal 30, result[:breakdown][:season], "September should be peak season (30/30)"
+  end
+
+  def test_saffron_milkcap_secondary_august
+    w = weather(temp: 16, rain: 30, days_since: 4, month: 8)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "August should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_saffron_milkcap_secondary_november
+    w = weather(temp: 10, rain: 25, days_since: 5, month: 11)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    expected_season = (30 * 0.70).round
+    assert_equal expected_season, result[:breakdown][:season], "November should be secondary season (#{expected_season}/30)"
+  end
+
+  def test_saffron_milkcap_peak_scores_higher_than_secondary
+    w_peak = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    w_secondary = weather(temp: 13, rain: 25, days_since: 5, month: 8)
+    peak_result = ScoringEngine.new("saffron_milkcap", w_peak).call
+    secondary_result = ScoringEngine.new("saffron_milkcap", w_secondary).call
+    assert peak_result[:score] > secondary_result[:score],
+      "Peak month score (#{peak_result[:score]}) should beat secondary (#{secondary_result[:score]})"
+  end
+
+  def test_saffron_milkcap_out_of_season_summer
+    w = weather(temp: 20, rain: 30, days_since: 3, month: 7)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_saffron_milkcap_out_of_season_spring
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season]
+  end
+
+  def test_saffron_milkcap_too_cold_kills_score
+    # abs_min = 3°C, at 1°C → temp hard-kill
+    w = weather(temp: 1, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert_equal 0, result[:score], "Below abs_min temp should hard-kill total to 0"
+  end
+
+  def test_saffron_milkcap_too_warm_reduces_score
+    # abs_max = 25°C, at 24°C → marginal temp
+    w = weather(temp: 24, rain: 25, days_since: 5, month: 8)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert result[:breakdown][:temperature] > 0, "Within abs range should score > 0"
+    assert result[:breakdown][:temperature] < 24, "Above ideal should score low"
+  end
+
+  def test_saffron_milkcap_temp_range
+    sp = Species.find("saffron_milkcap")
+    assert_equal 8, sp[:temp_range][:ideal_min]
+    assert_equal 18, sp[:temp_range][:ideal_max]
+    assert_equal 3, sp[:temp_range][:abs_min]
+    assert_equal 25, sp[:temp_range][:abs_max]
+  end
+
+  def test_saffron_milkcap_rain_range
+    sp = Species.find("saffron_milkcap")
+    assert_equal 15, sp[:rain_range][:ideal_min]
+    assert_equal 45, sp[:rain_range][:ideal_max]
+    assert_equal 5, sp[:rain_range][:abs_min]
+    assert_equal 70, sp[:rain_range][:abs_max]
+  end
+
+  def test_saffron_milkcap_terrain_coniferous_ideal
+    assert_equal :ideal, ScoringEngine.terrain_match("saffron_milkcap", "coniferous")
+  end
+
+  def test_saffron_milkcap_terrain_mixed_partial
+    assert_equal :partial, ScoringEngine.terrain_match("saffron_milkcap", "mixed")
+  end
+
+  def test_saffron_milkcap_terrain_deciduous_bad
+    assert_equal :bad, ScoringEngine.terrain_match("saffron_milkcap", "deciduous")
+  end
+
+  def test_saffron_milkcap_terrain_grassland_bad
+    assert_equal :bad, ScoringEngine.terrain_match("saffron_milkcap", "grassland")
+  end
+
+  def test_saffron_milkcap_terrain_park_partial
+    # Parks sometimes have planted pines
+    assert_equal :partial, ScoringEngine.terrain_match("saffron_milkcap", "park")
+  end
+
+  def test_saffron_milkcap_terrain_scrubland_partial
+    assert_equal :partial, ScoringEngine.terrain_match("saffron_milkcap", "scrubland")
+  end
+
+  def test_saffron_milkcap_romanian_labels
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "ro").call
+    assert_equal "EXCELENT", result[:label]
+  end
+
+  def test_saffron_milkcap_romanian_out_of_season
+    w = weather(temp: 15, rain: 20, days_since: 3, month: 5)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "ro").call
+    assert_equal "ÎN AFARA SEZONULUI", result[:label]
+  end
+
+  def test_saffron_milkcap_tips_returned
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.include?("pine") }, "English tips should mention pine"
+  end
+
+  def test_saffron_milkcap_tips_ro_returned
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "ro").call
+    assert_equal 7, result[:tips].size
+    assert result[:tips].any? { |t| t.include?("pin") }, "Romanian tips should mention pine (pin)"
+  end
+
+  def test_saffron_milkcap_has_svg
+    sp = Species.find("saffron_milkcap")
+    assert sp[:svg], "Species should have SVG"
+    assert sp[:svg].include?("<svg"), "SVG should be valid XML"
+    assert sp[:svg].include?("smc-"), "SVG should use smc- namespaced ids"
+  end
+
+  def test_saffron_milkcap_has_color_scheme
+    sp = Species.find("saffron_milkcap")
+    assert sp[:color], "Should have main color"
+    assert sp[:gradient_from], "Should have gradient_from"
+    assert sp[:gradient_to], "Should have gradient_to"
+  end
+
+  def test_saffron_milkcap_temp_window
+    sp = Species.find("saffron_milkcap")
+    assert_equal 5, sp[:temp_window]
+  end
+
+  def test_saffron_milkcap_explanation_four_parts
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "en").call
+    parts = result[:explanation].split(" · ")
+    assert_equal 4, parts.size, "Explanation should have 4 parts separated by ' · '"
+  end
+
+  def test_saffron_milkcap_season_window_from_december
+    # Out of season in December → should suggest waiting for August
+    w = weather(temp: 5, rain: 20, days_since: 3, month: 12)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "en").call
+    assert result[:best_time].include?("August"), "Out of season in Dec should suggest waiting for August (got: #{result[:best_time]})"
+  end
+
+  def test_saffron_milkcap_season_window_from_march
+    # Out of season in March → should suggest waiting for August
+    w = weather(temp: 8, rain: 20, days_since: 3, month: 3)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "en").call
+    assert result[:best_time].include?("August"), "Out of season in March should suggest waiting for August (got: #{result[:best_time]})"
+  end
+
+  def test_saffron_milkcap_season_window_ro
+    w = weather(temp: 8, rain: 20, days_since: 3, month: 5)
+    result = ScoringEngine.new("saffron_milkcap", w, lang: "ro").call
+    assert result[:best_time].start_with?("Așteaptă"), "Romanian best_time should start with 'Așteaptă'"
+    assert result[:best_time].include?("August"), "Should suggest August in Romanian"
+  end
+
+  def test_saffron_milkcap_delay_ideal_range
+    sp = Species.find("saffron_milkcap")
+    assert_equal 3, sp[:delay_days][:ideal_min]
+    assert_equal 7, sp[:delay_days][:ideal_max]
+  end
+
+  def test_saffron_milkcap_best_time_in_sweet_spot
+    w = weather(temp: 13, rain: 25, days_since: 5, month: 10)
+    result = ScoringEngine.new("saffron_milkcap", w).call
+    assert result[:best_time]&.include?("right now"), "Within ideal delay should say 'right now' (got: #{result[:best_time]})"
+  end
 end

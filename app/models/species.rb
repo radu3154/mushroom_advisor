@@ -642,6 +642,178 @@ class Species
           <path d="M142 275 Q148 260 155 250" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
         </svg>
       SVG
+    },
+    "saffron_milkcap" => {
+      name: "Saffron Milk Cap",
+      name_ro: "Râșcov",
+      latin: "Lactarius deliciosus",
+      description: "The prized orange treasure of pine forests. Saffron milk caps form mycorrhizal bonds with conifers and flush after autumn rains, oozing bright orange latex when cut.",
+      description_ro: "Comoara portocalie a pădurilor de conifere. Râșcovul formează legături micorizale cu coniferele și apare după ploile de toamnă, eliberând un latex portocaliu viu la tăiere.",
+      season_months: [8, 9, 10, 11],
+      temp_range: { ideal_min: 8, ideal_max: 18, abs_min: 3, abs_max: 25 },
+      rain_range: { ideal_min: 15, ideal_max: 45, abs_min: 5, abs_max: 70 },
+      delay_days: { ideal_min: 3, ideal_max: 7, abs_min: 1, abs_max: 10 },
+      # Mycorrhizal fruiting responds to sustained cooling after summer.
+      # 5-day average captures the autumn temperature drop that triggers flushes.
+      temp_window: 5,
+      # Peak is September–October when autumn rains meet cooling temps.
+      # August and November are secondary (early scouts / late stragglers).
+      peak_months: [9, 10],
+      # Obligate ectomycorrhizal with conifers — pine forests are essential.
+      # Mixed forests work if pines are present. Pure deciduous = no chance.
+      preferred_terrain: { ideal: ["coniferous"], partial: ["mixed", "scrubland", "park"], bad: ["deciduous", "grassland", "wetland", "orchard", "farmland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:tree_conifer)} Always under pines — Scots pine, black pine, spruce edges",
+        "#{IconHelper.icon(:fallen_leaf)} Look on needle-covered slopes with well-drained, acidic soil",
+        "#{IconHelper.icon(:rain_heavy)} Best 3–7 days after good autumn rain",
+        "#{IconHelper.icon(:leaf_autumn)} Peak in September–October when nights cool below 12°C",
+        "#{IconHelper.icon(:droplet)} Cut the flesh — real ones ooze orange milk that turns green",
+        "#{IconHelper.icon(:trail)} Check pine plantation edges and sunny clearings",
+        "#{IconHelper.icon(:map_pin)} Return to known spots — the mycelium fruits year after year"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:tree_conifer)} Mereu sub pini — pin silvestru, pin negru, la marginea molidișurilor",
+        "#{IconHelper.icon(:fallen_leaf)} Caută pe versanți cu ace de pin și sol acid, bine drenat",
+        "#{IconHelper.icon(:rain_heavy)} Cel mai bine la 3–7 zile după o ploaie bună de toamnă",
+        "#{IconHelper.icon(:leaf_autumn)} Vârf în septembrie–octombrie când nopțile scad sub 12°C",
+        "#{IconHelper.icon(:droplet)} Taie carnea — cei autentici lasă un lapte portocaliu ce devine verde",
+        "#{IconHelper.icon(:trail)} Verifică marginile plantațiilor de pin și poienile însorite",
+        "#{IconHelper.icon(:map_pin)} Revino la locurile cunoscute — miceliul fructifică an de an"
+      ],
+      color: "#D2691E",
+      gradient_from: "#c45a1a",
+      gradient_to: "#e8924a",
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="smc-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8aad70"/>
+              <stop offset="50%" stop-color="#6a8d50"/>
+              <stop offset="100%" stop-color="#5a4a30"/>
+            </linearGradient>
+            <linearGradient id="smc-cap-top" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%" stop-color="#e8924a"/>
+              <stop offset="40%" stop-color="#d47830"/>
+              <stop offset="100%" stop-color="#b86020"/>
+            </linearGradient>
+            <linearGradient id="smc-cap-under" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e09040"/>
+              <stop offset="100%" stop-color="#c87830"/>
+            </linearGradient>
+            <linearGradient id="smc-stem" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#d4a060"/>
+              <stop offset="25%" stop-color="#e8b878"/>
+              <stop offset="75%" stop-color="#e8b878"/>
+              <stop offset="100%" stop-color="#c89050"/>
+            </linearGradient>
+            <radialGradient id="smc-cap-shine" cx="0.35" cy="0.3" r="0.5">
+              <stop offset="0%" stop-color="#f0b060" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#d47830" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="smc-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#smc-bg)"/>
+          <!-- Pine needle carpet -->
+          <ellipse cx="200" cy="282" rx="220" ry="28" fill="#5a4a28" opacity="0.25"/>
+          <ellipse cx="200" cy="278" rx="200" ry="18" fill="#6a5a30" opacity="0.2"/>
+          <!-- Scattered pine needles -->
+          <g opacity="0.35" stroke="#7a6a30" fill="none" stroke-width="0.7">
+            <line x1="55" y1="274" x2="85" y2="269"/><line x1="58" y1="276" x2="88" y2="272"/>
+            <line x1="62" y1="275" x2="78" y2="268"/>
+            <line x1="290" y1="272" x2="325" y2="267"/><line x1="295" y1="274" x2="328" y2="270"/>
+            <line x1="300" y1="273" x2="318" y2="266"/>
+            <line x1="140" y1="278" x2="162" y2="274"/><line x1="143" y1="280" x2="168" y2="276"/>
+            <line x1="235" y1="277" x2="258" y2="273"/><line x1="238" y1="279" x2="260" y2="275"/>
+          </g>
+          <!-- Pine cones -->
+          <g opacity="0.3">
+            <ellipse cx="95" cy="272" rx="6" ry="4" fill="#6a5020" transform="rotate(-15 95 272)"/>
+            <path d="M90 271 L92 268 L94 271 L96 268 L98 271 L100 268" stroke="#5a4018" stroke-width="0.6" fill="none" transform="rotate(-15 95 272)"/>
+            <ellipse cx="320" cy="270" rx="5" ry="3.5" fill="#6a5020" transform="rotate(10 320 270)"/>
+            <path d="M316 269 L318 266 L320 269 L322 266 L324 269" stroke="#5a4018" stroke-width="0.6" fill="none" transform="rotate(10 320 270)"/>
+          </g>
+          <!-- Small moss patches -->
+          <g opacity="0.3">
+            <circle cx="72" cy="274" r="6" fill="#4a7a2a"/>
+            <circle cx="80" cy="271" r="4" fill="#5a8a3a"/>
+            <circle cx="340" cy="272" r="5" fill="#4a7a2a"/>
+            <circle cx="348" cy="269" r="3.5" fill="#5a8a3a"/>
+          </g>
+          <!-- Main saffron milk cap with shadow -->
+          <g filter="url(#smc-shadow)">
+            <!-- Stem — short, stout, slightly tapered, with orange scrobicules -->
+            <path d="M186 272 Q183 258 182 242 Q181 228 183 218 Q185 212 190 208 L210 208 Q215 212 217 218 Q219 228 218 242 Q217 258 214 272 Z" fill="url(#smc-stem)"/>
+            <!-- Stem scrobicules (characteristic orange pits) -->
+            <g fill="#c07030" opacity="0.4">
+              <ellipse cx="192" cy="225" rx="2.5" ry="1.5"/><ellipse cx="196" cy="235" rx="2" ry="1.2"/>
+              <ellipse cx="204" cy="220" rx="2" ry="1.3"/><ellipse cx="208" cy="232" rx="2.5" ry="1.5"/>
+              <ellipse cx="200" cy="245" rx="2.2" ry="1.4"/><ellipse cx="194" cy="250" rx="2" ry="1.2"/>
+              <ellipse cx="206" cy="248" rx="2.3" ry="1.3"/><ellipse cx="190" cy="238" rx="1.8" ry="1.1"/>
+              <ellipse cx="210" cy="240" rx="2" ry="1.2"/><ellipse cx="198" cy="258" rx="2" ry="1.2"/>
+            </g>
+            <!-- Stem left shadow -->
+            <path d="M186 272 Q183 258 182 242 Q181 228 183 218 Q185 212 190 208 L194 208 Q189 214 188 222 Q186 232 186 248 Q186 260 188 272 Z" fill="#b08040" opacity="0.2"/>
+            <!-- Green bruise on stem (characteristic damage mark) -->
+            <ellipse cx="205" cy="255" rx="4" ry="3" fill="#5a8a50" opacity="0.25"/>
+            <!-- Gills (decurrent, crowded, visible at cap edge) -->
+            <g stroke="#d08838" stroke-width="0.6" fill="none" opacity="0.55">
+              <path d="M130 198 Q165 195 200 206"/>
+              <path d="M135 195 Q165 192 200 204"/>
+              <path d="M140 192 Q168 190 200 202"/>
+              <path d="M148 189 Q172 188 200 200"/>
+              <path d="M156 187 Q176 186 200 198"/>
+              <path d="M200 206 Q235 195 270 198"/>
+              <path d="M200 204 Q235 192 265 195"/>
+              <path d="M200 202 Q232 190 260 192"/>
+              <path d="M200 200 Q228 188 252 189"/>
+              <path d="M200 198 Q224 186 244 187"/>
+            </g>
+            <!-- Cap — broad, convex depressed to funnel-shaped -->
+            <path d="M118 194 Q122 172 148 155 Q175 142 200 140 Q225 142 252 155 Q278 172 282 194 Q260 200 200 204 Q140 200 118 194 Z" fill="url(#smc-cap-top)"/>
+            <!-- Cap concentric zones (characteristic ring pattern) -->
+            <g stroke="#b05820" stroke-width="0.8" fill="none" opacity="0.3">
+              <ellipse cx="200" cy="170" rx="70" ry="22"/>
+              <ellipse cx="200" cy="172" rx="55" ry="17"/>
+              <ellipse cx="200" cy="174" rx="40" ry="12"/>
+              <ellipse cx="200" cy="176" rx="25" ry="8"/>
+            </g>
+            <!-- Cap central depression -->
+            <ellipse cx="200" cy="168" rx="18" ry="8" fill="#a85820" opacity="0.35"/>
+            <!-- Cap glossy shine -->
+            <path d="M148 158 Q170 146 200 143 Q218 143 235 148 Q215 143 195 148 Q170 156 158 170 Q152 178 148 188 Z" fill="url(#smc-cap-shine)"/>
+            <!-- Cap right shadow -->
+            <path d="M258 158 Q272 168 278 184 Q280 190 282 194 L268 196 Q266 182 256 168 Q252 160 258 158 Z" fill="#8a4010" opacity="0.18"/>
+            <!-- Cap surface color variation — darker orange patches -->
+            <g fill="#b85818" opacity="0.12">
+              <ellipse cx="170" cy="168" rx="12" ry="6"/>
+              <ellipse cx="230" cy="166" rx="10" ry="5"/>
+              <ellipse cx="200" cy="158" rx="8" ry="4"/>
+              <ellipse cx="155" cy="178" rx="9" ry="5"/>
+              <ellipse cx="245" cy="176" rx="8" ry="4"/>
+            </g>
+            <!-- Green staining on cap edge (characteristic aging/damage mark) -->
+            <path d="M135 192 Q140 188 148 190 Q142 194 135 192 Z" fill="#5a8a50" opacity="0.2"/>
+            <path d="M262 190 Q268 186 274 190 Q270 194 262 192 Z" fill="#5a8a50" opacity="0.18"/>
+          </g>
+          <!-- Small conifer seedling -->
+          <g opacity="0.35" transform="translate(50, 250) scale(0.7)">
+            <line x1="10" y1="40" x2="10" y2="18" stroke="#5a4020" stroke-width="1.2"/>
+            <polygon points="10,8 4,22 16,22" fill="#3a7a30"/>
+            <polygon points="10,14 5,26 15,26" fill="#2d6a25"/>
+            <polygon points="10,20 6,30 14,30" fill="#2d6a25"/>
+          </g>
+          <!-- Grass tufts -->
+          <path d="M255 275 Q253 264 257 255" stroke="#5a8a3a" stroke-width="1.3" fill="none" opacity="0.35"/>
+          <path d="M259 276 Q261 265 258 256" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.3"/>
+          <path d="M148 276 Q146 266 150 258" stroke="#5a8a3a" stroke-width="1.2" fill="none" opacity="0.3"/>
+          <path d="M152 276 Q153 268 150 260" stroke="#6a9a4a" stroke-width="1" fill="none" opacity="0.25"/>
+        </svg>
+      SVG
     }
   }.freeze
 
