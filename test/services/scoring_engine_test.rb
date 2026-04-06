@@ -828,4 +828,115 @@ class ScoringEngineTest < Minitest::Test
     assert result[:label].is_a?(String), "Unknown lang should fall back to English"
     assert result[:score] >= 0
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Edge cases — hard-kill and boundary interactions
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_hard_kill_temp_below_abs_forces_zero_total
+    # Morel abs_min temp = 4°C. At 2°C: temp scores 0 + out of abs → total forced to 0
+    w = weather(temp: 2, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w).call
+    assert_equal 0, result[:score], "Temp below abs_min should hard-kill total to 0"
+  end
+
+  def test_hard_kill_rain_above_abs_forces_zero_total
+    # Morel abs_max rain = 55mm. At 60mm: rain scores 0 + out of abs → total forced to 0
+    w = weather(temp: 12, rain: 60, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w).call
+    assert_equal 0, result[:score], "Rain above abs_max should hard-kill total to 0"
+  end
+
+  def test_no_hard_kill_when_temp_at_abs_min_exactly
+    # At exactly abs_min, score is 1 (not 0), so no hard-kill
+    w = weather(temp: 4, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w).call
+    assert result[:score] > 0, "Temp at exactly abs_min should score > 0 (no hard-kill)"
+    assert_equal 1, result[:breakdown][:temperature], "At abs_min, temp should score exactly 1"
+  end
+
+  def test_timing_zero_does_not_hard_kill
+    # Timing of 0 days since rain (abs_min = 1 for morel) scores 0 for timing,
+    # but timing is NOT a hard-kill factor — only temp and rain trigger hard-kill
+    w = weather(temp: 12, rain: 20, days_since: 0, month: 4)
+    result = ScoringEngine.new("morel", w).call
+    assert result[:score] > 0, "Timing=0 should not trigger hard-kill"
+    assert_equal 0, result[:breakdown][:timing]
+  end
+
+  def test_out_of_season_ignores_perfect_conditions
+    # Perfect weather but wrong month — should be out of season, not scored
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 8)
+    result = ScoringEngine.new("morel", w).call
+    assert_equal 0, result[:score]
+    assert result[:out_of_season], "August morel should be out of season"
+    assert_equal "out-of-season", result[:tier]
+  end
+
+  def test_water_terrain_overrides_perfect_conditions
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, land_cover: { type: "water" }).call
+    assert_equal 0, result[:score]
+    assert result[:on_water], "Water terrain should set on_water flag"
+  end
+
+  def test_urban_terrain_overrides_perfect_conditions
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, land_cover: { type: "residential", label_en: "Residential area", label_ro: "Zonă rezidențială" }).call
+    assert_equal 0, result[:score]
+    assert result[:on_urban], "Urban terrain should set on_urban flag"
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Season window text — all species, all months
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_season_window_never_crashes_any_species_any_month
+    Species.all.each do |key, sp|
+      (1..12).each do |month|
+        next if sp[:season_months].include?(month)  # only test out-of-season
+        w = weather(temp: 15, rain: 20, days_since: 3, month: month)
+        result = ScoringEngine.new(key, w, lang: "en").call
+        assert result[:best_time].is_a?(String), "#{key} month=#{month} should have best_time string"
+        assert result[:best_time].start_with?("Wait for"), "#{key} month=#{month} best_time should start with 'Wait for'"
+      end
+    end
+  end
+
+  def test_season_window_ro_never_crashes
+    Species.all.each do |key, sp|
+      (1..12).each do |month|
+        next if sp[:season_months].include?(month)
+        w = weather(temp: 15, rain: 20, days_since: 3, month: month)
+        result = ScoringEngine.new(key, w, lang: "ro").call
+        assert result[:best_time].is_a?(String), "#{key} month=#{month} RO should have best_time string"
+        assert result[:best_time].start_with?("Așteaptă"), "#{key} month=#{month} RO best_time should start with 'Așteaptă'"
+      end
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Explanation text — completeness for all paths
+  # ══════════════════════════════════════════════════════════════════════
+
+  def test_explanation_contains_all_four_factor_words
+    # Peak season, good everything → explanation should mention all 4 factors
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "en").call
+    explanation = result[:explanation].downcase
+    assert_includes explanation, "season", "Explanation should mention season"
+    assert_includes explanation, "temperature", "Explanation should mention temperature"
+    assert_includes explanation, "rain", "Explanation should mention rain"
+    assert_includes explanation, "rain", "Explanation should mention rain timing"
+  end
+
+  def test_explanation_ro_contains_all_four_factors
+    w = weather(temp: 12, rain: 20, days_since: 4, month: 4)
+    result = ScoringEngine.new("morel", w, lang: "ro").call
+    explanation = result[:explanation].downcase
+    assert_includes explanation, "sezon", "RO explanation should mention season"
+    assert_includes explanation, "temperatur", "RO explanation should mention temperature"
+    assert_includes explanation, "precipit", "RO explanation should mention rain"
+    assert_includes explanation, "ploaie", "RO explanation should mention timing"
+  end
 end
