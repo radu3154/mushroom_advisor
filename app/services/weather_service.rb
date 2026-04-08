@@ -133,10 +133,18 @@ class WeatherService
     dates = daily["time"] || []
     rains = daily["rain_sum"] || []
 
-    # Exclude today (last entry from forecast_days=1) — it's incomplete
     all_entries = dates.zip(rains).map { |d, r| { date: d, rain_mm: r || 0 } }
-    past_entries = all_entries[0...-1]  # drop today
-    past_entries = all_entries if past_entries.empty?  # fallback
+
+    # Today (last entry from forecast_days=1) has incomplete rain_sum — but if
+    # it already shows meaningful rain (>= 0.5 mm) we keep it, otherwise the
+    # user sees "dry" on a day it actually rained.  When the value is still
+    # near-zero we drop it to avoid counting a day with no rain yet.
+    today = all_entries.last
+    if all_entries.size > 1 && today && today[:rain_mm] < 0.5
+      past_entries = all_entries[0...-1]  # drop today — no significant rain yet
+    else
+      past_entries = all_entries            # keep today — rain already recorded
+    end
 
     last_7 = past_entries.last(7)
     total_7d = last_7.sum { |d| d[:rain_mm] }
