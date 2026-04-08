@@ -80,7 +80,7 @@ class WeatherService
   def fetch_weather(lat, lon)
     url = "#{OPEN_METEO_URL}?latitude=#{lat}&longitude=#{lon}" \
           "&current=temperature_2m,relative_humidity_2m,weather_code" \
-          "&daily=rain_sum,temperature_2m_mean" \
+          "&daily=precipitation_sum,temperature_2m_mean" \
           "&past_days=10" \
           "&forecast_days=1" \
           "&timezone=auto"
@@ -131,7 +131,9 @@ class WeatherService
 
   def extract_rain(daily)
     dates = daily["time"] || []
-    rains = daily["rain_sum"] || []
+    # precipitation_sum captures all forms (rain, showers, drizzle, sleet)
+    # whereas rain_sum only counts large-droplet rain and misses showers.
+    rains = daily["precipitation_sum"] || daily["rain_sum"] || []
 
     all_entries = dates.zip(rains).map { |d, r| { date: d, rain_mm: r || 0 } }
 
