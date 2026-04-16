@@ -213,4 +213,19 @@
       <% end %>
     </ul>
   </div>
+
+  <!-- Identification Photos -->
+  <% if @result[:photos].present? %>
+    <div class="info-section">
+      <h3><%= I18nHelper.t(:identification_photos, @lang) %></h3>
+      <div class="photo-gallery">
+        <% @result[:photos].each do |photo| %>
+          <div class="photo-card">
+            <img src="<%= photo[:url] %>" alt="<%= @result[:species_latin] %>" loading="lazy">
+          </div>
+        <% end %>
+      </div>
+      <p class="photo-credit">Photos: Wikimedia Commons (CC BY-SA)</p>
+    </div>
+  <% end %>
 </div>

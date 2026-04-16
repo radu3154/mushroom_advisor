@@ -36,6 +36,11 @@ class Species
       color: "#8B6914",
       gradient_from: "#a67c28",
       gradient_to: "#d4a843",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Morchella_esculenta_var._rotunda_01.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Morchella-esculenta-anglars.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Morchella_esculenta_-_DE_-_TH_-_2013-05-01_-_02.JPG?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -185,6 +190,11 @@ class Species
       color: "#8B4513",
       gradient_from: "#6b3410",
       gradient_to: "#a0522d",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Boletus_edulis_2_2008.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Gemeine_Steinpilz_(Boletus_edulis).JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Boletus_edulis_(5).jpg?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -336,6 +346,11 @@ class Species
       color: "#DAA520",
       gradient_from: "#c9941a",
       gradient_to: "#f0c040",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Chanterelle_Cantharellus_cibarius.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Cantharellus_cibarius-_kantareller.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/100904_Li%C5%A1ka_obecn%C3%A1_(Cantharellus_cibarius)_0004.JPG?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -467,7 +482,7 @@ class Species
       description_ro: "Supraviețuitorul toamnei și iernii, în formă de scoică. Păstrăvul de fag crește în grupuri pe lemn mort de fag, stejar și plop — și poate fructifica chiar și după primele înghețuri.",
       season_months: [3, 4, 5, 9, 10, 11, 12],
       temp_range: { ideal_min: 5, ideal_max: 20, abs_min: -5, abs_max: 26 },
-      rain_range: { ideal_min: 10, ideal_max: 40, abs_min: 3, abs_max: 80 },
+      rain_range: { ideal_min: 5, ideal_max: 40, abs_min: 1, abs_max: 80 },
       delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 8 },
       # Oyster mushrooms respond quickly to cold snaps.
       # 5-day average captures the autumn temperature drops that trigger fruiting.
@@ -495,6 +510,11 @@ class Species
       color: "#708090",
       gradient_from: "#5a6a78",
       gradient_to: "#8a9aa8",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Pleurotus_ostreatus,_Japan_1.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Pleurotus_ostreatus_1.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Austern-Seitling_Austernpilz_Pleurotus_ostreatus.JPG?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -683,6 +703,11 @@ class Species
       color: "#D2691E",
       gradient_from: "#c45a1a",
       gradient_to: "#e8924a",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lactarius_Deliciosus.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Echte_Reizker_Lactarius_deliciosus.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lactarius_deliciosus_rafax.JPG?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -855,6 +880,11 @@ class Species
       color: "#A0826D",
       gradient_from: "#8a6a55",
       gradient_to: "#c4a088",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Macrolepiota_procera.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Macrolepiota_procera_young.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lepiota_procera_-_Macrolepiota_procera_-_Parasol_-_Riesenschirmpilz_-_03.jpg?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -1052,6 +1082,11 @@ class Species
       color: "#C8A030",
       gradient_from: "#a88520",
       gradient_to: "#e8c860",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Armillaria_mellea_in_Sochi_14112015.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Opienka_miodowa_(Armillaria_mellea).JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Armillaria_mellea_opienka_miodowa_2.JPG?width=400" },
+      ],
       svg: <<~SVG
         <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>

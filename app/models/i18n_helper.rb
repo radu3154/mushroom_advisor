@@ -3,8 +3,8 @@ class I18nHelper
     "en" => {
       header_title: "Mushroom Advisor",
       header_subtitle: "Should you go foraging today? Let the weather decide.",
-      pick_mushroom: "Pick your mushroom",
-      choose_location: "Choose your location",
+      pick_mushroom: "1. Pick your mushroom",
+      choose_location: "2. Choose your location",
       check_conditions: "Check Conditions",
       hint_both: "Select a mushroom and a location on the map",
       hint_mushroom: "Now pick a mushroom above",
@@ -32,13 +32,14 @@ class I18nHelper
       terrain_partial: "Acceptable terrain — not ideal, but possible.",
       terrain_bad: "Wrong terrain for this species.",
       terrain_unknown: "Terrain compatibility unknown.",
-      days_since_rain: "days since rain"
+      days_since_rain: "days since rain",
+      identification_photos: "Identification photos"
     },
     "ro" => {
       header_title: "Sfatul Ciupercarului",
       header_subtitle: "Mergi la ciuperci azi? Las\u0103 vremea s\u0103 decid\u0103.",
-      pick_mushroom: "Alege ciuperca",
-      choose_location: "Alege loca\u021Bia",
+      pick_mushroom: "1. Alege ciuperca",
+      choose_location: "2. Alege loca\u021Bia",
       check_conditions: "Verific\u0103 Condi\u021Biile",
       hint_both: "Alege o ciuperc\u0103 \u0219i o loca\u021Bie pe hart\u0103",
       hint_mushroom: "Acum alege o ciuperc\u0103 de mai sus",
@@ -66,7 +67,8 @@ class I18nHelper
       terrain_partial: "Teren acceptabil — nu ideal, dar posibil.",
       terrain_bad: "Teren nepotrivit pentru această specie.",
       terrain_unknown: "Compatibilitatea terenului necunoscută.",
-      days_since_rain: "zile de la ploaie"
+      days_since_rain: "zile de la ploaie",
+      identification_photos: "Fotografii de identificare"
     }
   }.freeze
 

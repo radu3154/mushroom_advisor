@@ -38,6 +38,7 @@ class MushroomsController < ApplicationController
       lat: lat,
       lon: lon,
       elevation: weather_data[:elevation],
+      photos: species_info[:photos] || [],
       weather_stats: {
         avg_temp: weather_data[:avg_temp],
         total_rain: weather_data[:total_rain_7d],
