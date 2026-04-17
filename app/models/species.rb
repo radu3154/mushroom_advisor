@@ -348,7 +348,7 @@ class Species
       gradient_to: "#f0c040",
       photos: [
         { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Chanterelle_Cantharellus_cibarius.jpg?width=400" },
-        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Cantharellus_cibarius-_kantareller.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Cantharellus_cibarius_(GB%3D_Chanterelle,_D%3D_Pfifferling,_Reherling,_Eierschwamm,_NL%3D_Hanenkam)_at_Wofheze_at_30_July_2015_-_panoramio.jpg?width=400" },
         { url: "https://commons.wikimedia.org/wiki/Special:FilePath/100904_Li%C5%A1ka_obecn%C3%A1_(Cantharellus_cibarius)_0004.JPG?width=400" },
       ],
       svg: <<~SVG
@@ -842,7 +842,7 @@ class Species
     },
     "parasol" => {
       name: "Parasol Mushroom",
-      name_ro: "Pălăria Șarpelui",
+      name_ro: "Piciorul căprioarei",
       latin: "Macrolepiota procera",
       description: "The towering parasol of meadows and forest edges. This majestic mushroom can reach 40 cm tall, its flat scaly cap opening like an umbrella over a snakeskin-patterned stem.",
       description_ro: "Umbrela maiestuoasă a pajiștilor și marginilor de pădure. Această ciupercă impunătoare poate atinge 40 cm înălțime, cu pălăria plată și solzoasă deschisă ca o umbrelă peste o tijă cu model de piele de șarpe.",
@@ -882,7 +882,7 @@ class Species
       gradient_to: "#c4a088",
       photos: [
         { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Macrolepiota_procera.JPG?width=400" },
-        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Macrolepiota_procera_young.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Macrolepiota_procera_2018_G1.jpg?width=400" },
         { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lepiota_procera_-_Macrolepiota_procera_-_Parasol_-_Riesenschirmpilz_-_03.jpg?width=400" },
       ],
       svg: <<~SVG
@@ -1434,6 +1434,1015 @@ class Species
             <path d="M94 285 Q95 274 98 265" stroke="#4a7838" stroke-width="1.1"/>
             <path d="M310 284 Q308 273 312 264" stroke="#3a6828" stroke-width="1.2"/>
             <path d="M314 284 Q316 275 313 266" stroke="#4a7838" stroke-width="1"/>
+          </g>
+        </svg>
+      SVG
+    },
+    "chicken_of_the_woods" => {
+      name: "Chicken of the Woods",
+      name_ro: "Iasca galbenă",
+      latin: "Laetiporus sulphureus",
+      description: "Brilliant orange-yellow shelves erupt from oak and chestnut trunks in warm early summer. This meaty bracket fungus returns to the same tree year after year, rewarding foragers who mark their finds.",
+      description_ro: "Rafturi strălucitor portocaliu-aurii erup din trunchiuri de stejar și castan în vara timpurie. Acest burete cărnos revine la același copac an de an, răsplătind culegătorii care își marchează descoperirile.",
+      season_months: [4, 5, 6, 7, 8, 9, 10],
+      temp_range: { ideal_min: 15, ideal_max: 25, abs_min: 10, abs_max: 30 },
+      rain_range: { ideal_min: 5, ideal_max: 15, abs_min: 2, abs_max: 25 },
+      delay_days: { ideal_min: 3, ideal_max: 7, abs_min: 2, abs_max: 14 },
+      # Bracket fungus on wood — responds to warmth + humidity rather than soil moisture.
+      # 5-day temp average captures the warm spell that triggers fruiting.
+      temp_window: 5,
+      # Grows on hardwood trees — needs deciduous or mixed forest with mature trees.
+      preferred_terrain: { ideal: ["deciduous", "orchard", "park"], partial: ["mixed", "scrubland"], bad: ["coniferous", "grassland", "farmland", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:map_pin)} Mark the tree — chicken of the woods returns to the same host yearly",
+        "#{IconHelper.icon(:tree_deciduous)} Check mature oak, chestnut, and cherry trees especially",
+        "#{IconHelper.icon(:hand_pick)} Harvest young, bright-orange shelves — older pale ones get tough",
+        "#{IconHelper.icon(:storm)} Best 3-7 days after warm rain following dry spells",
+        "#{IconHelper.icon(:sunrise)} Morning harvest gives firmest, freshest texture",
+        "#{IconHelper.icon(:sun)} Yellow pores underneath confirm ID — never white gills",
+        "#{IconHelper.icon(:log)} Dead standing trunks and large fallen logs are prime spots"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:map_pin)} Marchează copacul — buretele sulfuros revine la aceeași gazdă anual",
+        "#{IconHelper.icon(:tree_deciduous)} Verifică stejarii, castanii și cireșii maturi în special",
+        "#{IconHelper.icon(:hand_pick)} Recoltează rafturile tinere, portocaliu-intens — cele vechi devin tari",
+        "#{IconHelper.icon(:storm)} Cel mai bine la 3-7 zile după ploaie caldă după secetă",
+        "#{IconHelper.icon(:sunrise)} Recolta dimineață oferă textura cea mai fermă și proaspătă",
+        "#{IconHelper.icon(:sun)} Porii galbeni dedesubt confirmă identificarea — niciodată lamele albe",
+        "#{IconHelper.icon(:log)} Trunchiurile moarte în picioare și buștenii mari căzuți sunt locuri ideale"
+      ],
+      color: "#FF8C00",
+      gradient_from: "#FFB347",
+      gradient_to: "#FF6600",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Chicken_of_the_Woods_-_Laetiporus_sulphureus.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Laetiporus_sulphureus_(Chicken_of_the_woods)_on_an_oak_tree_-_20070921.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Yellow-orange_coloured_Laetiporus_sulphureus_(Chicken_of_the_Woods_or_Sulphur_shelf,_D%3D_Schwefelporling,_F%3D_Polypore_soufr%C3%A9,_NL%3D_Zwavelzwam)_white_spores_and_causes_brown_rot,_at_these_old_trunk_at_Schaarsbergen_forest_-_panoramio.jpg?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cotw-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a9a70"/>
+              <stop offset="40%" stop-color="#728860"/>
+              <stop offset="70%" stop-color="#5a6848"/>
+              <stop offset="100%" stop-color="#4a4030"/>
+            </linearGradient>
+            <linearGradient id="cotw-trunk" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#4a3525"/>
+              <stop offset="20%" stop-color="#6a4a35"/>
+              <stop offset="50%" stop-color="#7a5a42"/>
+              <stop offset="80%" stop-color="#684838"/>
+              <stop offset="100%" stop-color="#4a3020"/>
+            </linearGradient>
+            <!-- Main shelf gradient: bright sulphur-yellow at base → rich orange at outer edge -->
+            <radialGradient id="cotw-shelf1" cx="0.15" cy="0.4" r="0.9">
+              <stop offset="0%" stop-color="#FFE44D"/>
+              <stop offset="30%" stop-color="#FFD020"/>
+              <stop offset="55%" stop-color="#FFA820"/>
+              <stop offset="80%" stop-color="#FF7A10"/>
+              <stop offset="100%" stop-color="#E85800"/>
+            </radialGradient>
+            <radialGradient id="cotw-shelf2" cx="0.2" cy="0.35" r="0.85">
+              <stop offset="0%" stop-color="#FFDD40"/>
+              <stop offset="35%" stop-color="#FFC018"/>
+              <stop offset="60%" stop-color="#FF9A18"/>
+              <stop offset="85%" stop-color="#FF6A08"/>
+              <stop offset="100%" stop-color="#D84A00"/>
+            </radialGradient>
+            <radialGradient id="cotw-shelf3" cx="0.25" cy="0.4" r="0.8">
+              <stop offset="0%" stop-color="#FFE860"/>
+              <stop offset="30%" stop-color="#FFD530"/>
+              <stop offset="60%" stop-color="#FFB020"/>
+              <stop offset="100%" stop-color="#FF6600"/>
+            </radialGradient>
+            <!-- Underside (pore surface) — pale sulphur yellow -->
+            <linearGradient id="cotw-pores" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFE880"/>
+              <stop offset="100%" stop-color="#FFCC40"/>
+            </linearGradient>
+            <radialGradient id="cotw-dapple" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="#b8c8a0" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#b8c8a0" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="cotw-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#cotw-bg)"/>
+          <!-- Dappled light -->
+          <ellipse cx="100" cy="50" rx="50" ry="35" fill="url(#cotw-dapple)"/>
+          <ellipse cx="320" cy="60" rx="40" ry="28" fill="url(#cotw-dapple)"/>
+          <!-- Forest floor -->
+          <ellipse cx="200" cy="286" rx="230" ry="28" fill="#4a4030" opacity="0.25"/>
+          <!-- ===== OAK TRUNK — thick, textured, characterful ===== -->
+          <!-- Trunk body -->
+          <path d="M150 0 Q148 50 146 150 Q145 220 148 300 L252 300 Q255 220 254 150 Q252 50 250 0 Z" fill="url(#cotw-trunk)"/>
+          <!-- Trunk roundness highlights -->
+          <path d="M165 0 Q163 80 162 160 Q161 240 163 300 L195 300 Q193 240 192 160 Q191 80 193 0 Z" fill="#8a6a4a" opacity="0.15"/>
+          <!-- Deep bark furrows -->
+          <g stroke="#3a2518" fill="none" opacity="0.3">
+            <path d="M160 15 Q162 40 158 65 Q156 90 160 115 Q163 140 159 165 Q157 190 161 215 Q164 240 160 265 Q158 280 160 300" stroke-width="1.2"/>
+            <path d="M178 10 Q180 35 176 60 Q174 85 178 110 Q181 135 177 160 Q175 185 179 210 Q182 235 178 260 Q176 280 178 300" stroke-width="1"/>
+            <path d="M200 8 Q198 40 202 70 Q204 100 200 130 Q198 160 202 190 Q204 220 200 250 Q198 275 200 300" stroke-width="0.8"/>
+            <path d="M220 12 Q222 40 218 68 Q216 95 220 122 Q223 150 219 178 Q217 205 221 232 Q224 260 220 288" stroke-width="1"/>
+            <path d="M238 18 Q236 45 240 72 Q242 98 238 125 Q236 152 240 180 Q242 208 238 235 Q236 262 238 290" stroke-width="1.1"/>
+          </g>
+          <!-- Bark ridges (horizontal texture) -->
+          <g stroke="#5a4030" fill="none" opacity="0.15">
+            <path d="M155 50 Q180 48 200 50 Q220 52 245 48" stroke-width="0.6"/>
+            <path d="M153 100 Q180 97 200 100 Q225 102 248 98" stroke-width="0.5"/>
+            <path d="M150 180 Q175 177 200 180 Q225 183 250 178" stroke-width="0.6"/>
+            <path d="M150 230 Q178 228 200 230 Q225 232 252 228" stroke-width="0.5"/>
+          </g>
+          <!-- ===== BRACKET SHELVES — realistic fan shapes with wavy edges ===== -->
+          <g filter="url(#cotw-shadow)">
+            <!-- === SHELF A (large, hero, right side, mid-trunk) === -->
+            <!-- Pore surface underside (visible as thickness) -->
+            <path d="M248 140 Q268 138 290 142 Q308 148 318 156 Q305 160 285 158 Q265 154 248 148 Z" fill="url(#cotw-pores)" opacity="0.7"/>
+            <!-- Main shelf top — fan/kidney shape with wavy lobed edge -->
+            <path d="M248 130 Q250 126 260 122 Q275 118 292 120
+                     Q308 124 316 132 Q320 138 318 142
+                     Q314 146 305 148 Q292 150 276 148
+                     Q260 144 248 138 Z" fill="url(#cotw-shelf1)"/>
+            <!-- Concentric growth zones (rings like real brackets) -->
+            <g stroke="#D87800" fill="none" opacity="0.25">
+              <path d="M255 128 Q268 124 286 126 Q302 130 312 136" stroke-width="0.7"/>
+              <path d="M258 132 Q270 128 284 130 Q298 134 306 138" stroke-width="0.6"/>
+              <path d="M260 136 Q272 133 284 134 Q295 137 302 140" stroke-width="0.5"/>
+            </g>
+            <!-- Wavy edge detail -->
+            <path d="M260 122 Q268 119 278 118 Q288 119 298 122 Q306 126 312 132 Q316 137 318 142"
+                  stroke="#D05000" stroke-width="0.8" fill="none" opacity="0.35"/>
+            <!-- Surface highlight (wet sheen) -->
+            <path d="M258 126 Q270 122 284 123 Q296 126 306 132" fill="#FFE860" opacity="0.15"/>
+
+            <!-- === SHELF B (largest, hero, right side, lower) === -->
+            <path d="M246 172 Q265 170 290 174 Q312 182 328 194 Q315 200 292 198 Q268 192 250 184 Z" fill="url(#cotw-pores)" opacity="0.65"/>
+            <path d="M246 160 Q250 154 262 148 Q280 144 300 146
+                     Q318 150 328 162 Q334 170 332 178
+                     Q326 184 314 186 Q296 188 278 184
+                     Q260 178 252 170 Q246 166 246 160 Z" fill="url(#cotw-shelf2)"/>
+            <!-- Growth zones -->
+            <g stroke="#D07000" fill="none" opacity="0.25">
+              <path d="M258 154 Q275 148 295 150 Q314 156 325 166" stroke-width="0.8"/>
+              <path d="M262 160 Q278 155 292 156 Q310 162 320 170" stroke-width="0.7"/>
+              <path d="M266 166 Q280 162 292 163 Q306 168 316 174" stroke-width="0.6"/>
+              <path d="M268 170 Q282 167 292 168 Q304 172 312 178" stroke-width="0.5"/>
+            </g>
+            <!-- Wavy lobed edge -->
+            <path d="M265 148 Q280 144 295 144 Q310 146 320 154 Q328 162 332 172 Q334 178 332 178"
+                  stroke="#C04800" stroke-width="0.9" fill="none" opacity="0.3"/>
+            <!-- Surface highlight -->
+            <path d="M265 154 Q282 148 298 150 Q315 155 325 164" fill="#FFE860" opacity="0.12"/>
+
+            <!-- === SHELF C (small, top, right side) === -->
+            <path d="M245 88 Q255 82 270 80 Q288 82 300 90
+                     Q306 96 304 100 Q298 104 285 104
+                     Q270 102 255 96 Q248 92 245 88 Z" fill="url(#cotw-shelf3)"/>
+            <g stroke="#D07800" fill="none" opacity="0.22">
+              <path d="M254 86 Q268 82 282 84 Q294 88 300 94" stroke-width="0.6"/>
+              <path d="M257 90 Q268 87 280 88 Q290 91 296 96" stroke-width="0.5"/>
+            </g>
+            <path d="M258 82 Q272 80 286 82 Q296 86 302 92" fill="#FFE860" opacity="0.12"/>
+
+            <!-- === SHELF D (left side, medium, overlapping trunk) === -->
+            <path d="M152 156 Q140 160 124 162 Q110 160 104 154 Q108 148 118 146 Q132 145 148 150 Z" fill="url(#cotw-pores)" opacity="0.6"/>
+            <path d="M152 145 Q148 140 138 136 Q122 134 108 138
+                     Q98 144 96 150 Q100 156 110 158
+                     Q124 158 138 154 Q150 150 152 145 Z" fill="url(#cotw-shelf1)"/>
+            <g stroke="#D07800" fill="none" opacity="0.2">
+              <path d="M144 140 Q130 137 116 139 Q106 143 102 148" stroke-width="0.6"/>
+              <path d="M142 144 Q130 142 118 143 Q108 146 104 150" stroke-width="0.5"/>
+            </g>
+
+            <!-- === SHELF E (tiny, left side, upper) === -->
+            <path d="M154 108 Q146 104 136 104 Q126 106 122 112
+                     Q126 116 134 116 Q144 114 152 112 Z" fill="url(#cotw-shelf3)"/>
+            <path d="M148 106 Q138 104 130 106 Q126 110 128 114" stroke="#D07800" stroke-width="0.4" fill="none" opacity="0.2"/>
+          </g>
+          <!-- Moss on trunk base -->
+          <g opacity="0.45">
+            <circle cx="165" cy="275" r="7" fill="#3a7a1a"/>
+            <circle cx="175" cy="270" r="5" fill="#4a8a2a"/>
+            <circle cx="155" cy="280" r="4" fill="#5a9a3a"/>
+            <circle cx="230" cy="273" r="6" fill="#3a7a1a"/>
+            <circle cx="240" cy="268" r="4" fill="#4a8a2a"/>
+            <circle cx="245" cy="276" r="3" fill="#5a9a3a"/>
+          </g>
+          <!-- Lichen on trunk -->
+          <g opacity="0.2">
+            <circle cx="175" cy="55" r="6" fill="#8a9a78"/>
+            <circle cx="180" cy="52" r="3.5" fill="#9aaa88"/>
+            <circle cx="225" cy="210" r="5" fill="#8a9a78"/>
+            <circle cx="228" cy="207" r="3" fill="#9aaa88"/>
+          </g>
+        </svg>
+      SVG
+    },
+    "wood_blewit" => {
+      name: "Wood Blewit",
+      name_ro: "Nicorete mov",
+      latin: "Lepista nuda",
+      description: "Ethereal violet-lilac caps rise from autumn leaf drifts in cool damp forests. One of the last mushrooms of the year, rewarding patient foragers who brave the first frosts.",
+      description_ro: "Pălării violet-liliac eterice se ridică din mormane de frunze toamnale în păduri reci și umede. Una dintre ultimele ciuperci ale anului, răsplătind culegătorii răbdători care înfruntă primele înghețuri.",
+      season_months: [8, 9, 10, 11, 12],
+      temp_range: { ideal_min: 7, ideal_max: 15, abs_min: 4, abs_max: 18 },
+      rain_range: { ideal_min: 8, ideal_max: 20, abs_min: 3, abs_max: 35 },
+      delay_days: { ideal_min: 4, ideal_max: 10, abs_min: 2, abs_max: 21 },
+      # Blewits respond to the cool-damp pattern of late autumn.
+      # 5-day average captures the sustained cool+wet needed.
+      temp_window: 5,
+      # Leaf litter and humus-rich woodland or garden compost heaps.
+      preferred_terrain: { ideal: ["deciduous", "mixed", "park"], partial: ["coniferous", "scrubland", "grassland", "orchard"], bad: ["farmland", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:snowflake)} Cold triggers fruiting — scout after first frosts in late October",
+        "#{IconHelper.icon(:fallen_leaf)} Dig in deep leaf litter and compost — colonies hide beneath the surface",
+        "#{IconHelper.icon(:sparkle)} Violet stems are the key ID — true blewits have distinctly lilac stipes",
+        "#{IconHelper.icon(:blossom)} Sweet fruity aroma when broken — scentless ones are likely imposters",
+        "#{IconHelper.icon(:rain_heavy)} Hunt 4-10 days after autumn rains when temperatures drop below 12°C",
+        "#{IconHelper.icon(:trail)} Garden compost heaps and leaf mulch piles are secret blewit spots",
+        "#{IconHelper.icon(:hand_pick)} Later is better — blewits improve with frost, harvest into December"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:snowflake)} Frigul declanșează fructificarea — caută după primele înghețuri din octombrie",
+        "#{IconHelper.icon(:fallen_leaf)} Caută în litiera adâncă de frunze și compost — coloniile se ascund sub suprafață",
+        "#{IconHelper.icon(:sparkle)} Tulpinile violet sunt cheia identificării — vinețicile au picior distinctiv liliac",
+        "#{IconHelper.icon(:blossom)} Aromă dulce-fructată când se rupe — cele fără miros sunt probabil impostoare",
+        "#{IconHelper.icon(:rain_heavy)} Caută la 4-10 zile după ploile de toamnă când temperatura scade sub 12°C",
+        "#{IconHelper.icon(:trail)} Grămezile de compost din grădini sunt locuri secrete pentru vinețici",
+        "#{IconHelper.icon(:hand_pick)} Mai târziu e mai bine — vinețicile se îmbunătățesc cu îngheț, culege până în decembrie"
+      ],
+      color: "#9370DB",
+      gradient_from: "#B08DD4",
+      gradient_to: "#5B2C8E",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Clitocybe_Nuda,_AKA_Lepista_Nuda,_AKA_Wood_Blewit.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lepista_nuda_LC0372.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Lepista_nuda,_Wood_Blewit,_UK.jpg?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="blewit-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c0c8b0"/>
+              <stop offset="50%" stop-color="#a0a888"/>
+              <stop offset="100%" stop-color="#7a6a4a"/>
+            </linearGradient>
+            <linearGradient id="blewit-cap" x1="0.3" y1="0" x2="0.7" y2="1">
+              <stop offset="0%" stop-color="#B08DD4"/>
+              <stop offset="40%" stop-color="#9370DB"/>
+              <stop offset="100%" stop-color="#6A3DA0"/>
+            </linearGradient>
+            <linearGradient id="blewit-stem" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#B08DD4"/>
+              <stop offset="30%" stop-color="#C8B0E8"/>
+              <stop offset="70%" stop-color="#C0A8E0"/>
+              <stop offset="100%" stop-color="#9A78C0"/>
+            </linearGradient>
+            <linearGradient id="blewit-gills" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#C8A8E8"/>
+              <stop offset="100%" stop-color="#A080C8"/>
+            </linearGradient>
+            <filter id="blewit-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#blewit-bg)"/>
+          <!-- Autumn forest floor -->
+          <ellipse cx="200" cy="282" rx="220" ry="28" fill="#6b5a3a" opacity="0.25"/>
+          <!-- Fallen leaves -->
+          <g opacity="0.4">
+            <ellipse cx="80" cy="270" rx="25" ry="6" fill="#b8862a" transform="rotate(-15 80 270)"/>
+            <ellipse cx="130" cy="275" rx="20" ry="5" fill="#c49a30" transform="rotate(10 130 275)"/>
+            <ellipse cx="280" cy="268" rx="28" ry="7" fill="#a07828" transform="rotate(20 280 268)"/>
+            <ellipse cx="320" cy="274" rx="18" ry="5" fill="#b89030" transform="rotate(-8 320 274)"/>
+            <ellipse cx="185" cy="278" rx="22" ry="5" fill="#c4a035" transform="rotate(5 185 278)"/>
+            <ellipse cx="230" cy="276" rx="16" ry="4" fill="#a88828" transform="rotate(-12 230 276)"/>
+          </g>
+          <!-- Main blewit mushroom -->
+          <g filter="url(#blewit-shadow)">
+            <!-- Stem -->
+            <path d="M188 275 Q184 258 183 235 Q183 215 186 200 Q188 194 193 190 L207 190 Q212 194 214 200 Q217 215 217 235 Q216 258 212 275 Z" fill="url(#blewit-stem)"/>
+            <!-- Stem fibrous texture -->
+            <g stroke="#9A70C0" stroke-width="0.5" fill="none" opacity="0.3">
+              <path d="M192 270 Q191 250 192 220 Q192 205 193 195"/>
+              <path d="M200 273 Q200 250 200 220 Q200 205 200 192"/>
+              <path d="M208 270 Q209 250 208 220 Q208 205 207 195"/>
+            </g>
+            <!-- Gills -->
+            <ellipse cx="200" cy="188" rx="60" ry="8" fill="url(#blewit-gills)"/>
+            <g stroke="#9060B0" stroke-width="0.4" fill="none" opacity="0.3">
+              <line x1="155" y1="188" x2="245" y2="188"/>
+              <line x1="160" y1="186" x2="240" y2="186"/>
+              <line x1="165" y1="190" x2="235" y2="190"/>
+            </g>
+            <!-- Cap — convex, smooth -->
+            <path d="M135 184 Q140 150 160 130 Q180 115 200 112 Q220 115 240 130 Q260 150 265 184 Z" fill="url(#blewit-cap)"/>
+            <!-- Cap highlight -->
+            <path d="M160 130 Q180 118 200 116 Q210 116 220 120 Q200 115 185 125 Q170 138 162 155 Z" fill="#C8A8E8" opacity="0.3"/>
+            <!-- Cap edge subtle ring -->
+            <path d="M140 178 Q170 172 200 170 Q230 172 260 178" stroke="#7050A0" stroke-width="0.6" fill="none" opacity="0.3"/>
+          </g>
+          <!-- Small background blewit -->
+          <g opacity="0.4" transform="translate(305, 230) scale(0.35)">
+            <path d="M-10 60 Q-8 30 -5 15 L5 15 Q8 30 10 60 Z" fill="#B08DD4"/>
+            <path d="M-30 12 Q-20 -10 0 -15 Q20 -10 30 12 Z" fill="#9370DB"/>
+          </g>
+          <!-- Grass tufts -->
+          <path d="M100 278 Q102 266 98 258" stroke="#6b8a4a" stroke-width="1.3" fill="none" opacity="0.35"/>
+          <path d="M104 278 Q105 268 108 260" stroke="#7a9a5a" stroke-width="1" fill="none" opacity="0.3"/>
+        </svg>
+      SVG
+    },
+    "wood_ear" => {
+      name: "Wood Ear",
+      name_ro: "Buretele de soc",
+      latin: "Auricularia auricula-judae",
+      description: "Translucent ear-shaped jelly fungi cling to dead elder branches year-round, swelling after rain into dark rubbery lobes. A winter forager's treasure when nothing else fruits.",
+      description_ro: "Ciuperci gelatinoase în formă de ureche se lipesc de ramurile moarte de soc tot anul, umflându-se după ploaie în lobi întunecați cauciucați. Comoara culegătorului de iarnă când nimic altceva nu fructifică.",
+      season_months: [1, 2, 3, 4, 5, 9, 10, 11, 12],
+      temp_range: { ideal_min: 10, ideal_max: 16, abs_min: 5, abs_max: 22 },
+      rain_range: { ideal_min: 2, ideal_max: 10, abs_min: 1, abs_max: 20 },
+      delay_days: { ideal_min: 1, ideal_max: 3, abs_min: 1, abs_max: 7 },
+      # Jelly fungus on wood — responds very quickly to moisture.
+      # 4-day temp window since it rehydrates fast after rain.
+      temp_window: 4,
+      # Grows on dead hardwood, especially elder. Needs forest with dead wood.
+      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["wetland", "park", "scrubland"], bad: ["coniferous", "grassland", "farmland", "orchard", "water"] },
+      tips: [
+        "#{IconHelper.icon(:log)} Elder trees are the #1 host — learn to recognize elder bark",
+        "#{IconHelper.icon(:rain_heavy)} Best 1-3 days after rain when flesh is plump and hydrated",
+        "#{IconHelper.icon(:snowflake)} Frost-proof — wood ears freeze and revive when thawed, forage all winter",
+        "#{IconHelper.icon(:map_pin)} Mark elder trees with fruiting bodies — return monthly for repeat harvests",
+        "#{IconHelper.icon(:hand_pick)} Pull gently from attachment point — entire ear detaches cleanly",
+        "#{IconHelper.icon(:sun)} Dry and rehydrate — dried wood ears store for months and rehydrate perfectly",
+        "#{IconHelper.icon(:fern)} Spring and autumn peaks — best tenderness April-May and September-November"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:log)} Socul este gazda #1 — învață să recunoști scoarța de soc",
+        "#{IconHelper.icon(:rain_heavy)} Cel mai bine la 1-3 zile după ploaie când carnea este umflată și hidratată",
+        "#{IconHelper.icon(:snowflake)} Rezistent la îngheț — urechile se înghață și revin la dezgheț, culege toată iarna",
+        "#{IconHelper.icon(:map_pin)} Marchează copacii de soc — revino lunar pentru recolte repetate",
+        "#{IconHelper.icon(:hand_pick)} Trage ușor din punctul de atașament — toată urechea se desprinde curat",
+        "#{IconHelper.icon(:sun)} Usucă și rehidratează — urechile uscate se păstrează luni și se rehidratează perfect",
+        "#{IconHelper.icon(:fern)} Vârfuri primăvara și toamna — cea mai bună frageditate aprilie-mai și septembrie-noiembrie"
+      ],
+      color: "#5C4033",
+      gradient_from: "#8B7355",
+      gradient_to: "#2C1810",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Auricularia_auricula-judae_a.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Auricularia_auricula-judae_64485.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Auricularia_auricula-judae,_Jelly_Ear_Fungus,_UK.jpg?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="we-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a9878"/>
+              <stop offset="35%" stop-color="#728868"/>
+              <stop offset="70%" stop-color="#5a6850"/>
+              <stop offset="100%" stop-color="#4a4a38"/>
+            </linearGradient>
+            <!-- Elder branch — pale grey-brown bark -->
+            <linearGradient id="we-branch" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9a9080"/>
+              <stop offset="30%" stop-color="#7a7060"/>
+              <stop offset="70%" stop-color="#6a6050"/>
+              <stop offset="100%" stop-color="#5a5040"/>
+            </linearGradient>
+            <linearGradient id="we-branch-top" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#a8a090"/>
+              <stop offset="100%" stop-color="#8a8070"/>
+            </linearGradient>
+            <!-- Ear inner surface — dark reddish-brown, smooth, concave -->
+            <radialGradient id="we-ear-inner" cx="0.4" cy="0.35" r="0.65">
+              <stop offset="0%" stop-color="#7a4a38"/>
+              <stop offset="40%" stop-color="#5C3528"/>
+              <stop offset="80%" stop-color="#3a2018"/>
+              <stop offset="100%" stop-color="#2a1510"/>
+            </radialGradient>
+            <!-- Ear outer surface — velvety, lighter greyish-brown -->
+            <radialGradient id="we-ear-outer" cx="0.5" cy="0.4" r="0.6">
+              <stop offset="0%" stop-color="#8a7060"/>
+              <stop offset="50%" stop-color="#6a5040"/>
+              <stop offset="100%" stop-color="#4a3528"/>
+            </radialGradient>
+            <!-- Translucent wet jelly glow -->
+            <radialGradient id="we-jelly" cx="0.4" cy="0.3" r="0.5">
+              <stop offset="0%" stop-color="#b08868" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#6a4030" stop-opacity="0"/>
+            </radialGradient>
+            <!-- Wet gloss highlight -->
+            <radialGradient id="we-gloss" cx="0.3" cy="0.25" r="0.4">
+              <stop offset="0%" stop-color="#fff" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="we-dapple" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="#b8c8a0" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#b8c8a0" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="we-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#we-bg)"/>
+          <!-- Dappled forest light -->
+          <ellipse cx="80" cy="50" rx="50" ry="35" fill="url(#we-dapple)"/>
+          <ellipse cx="320" cy="40" rx="45" ry="30" fill="url(#we-dapple)"/>
+          <!-- Forest floor -->
+          <ellipse cx="200" cy="286" rx="230" ry="28" fill="#4a4030" opacity="0.25"/>
+          <!-- ===== ELDER BRANCH — diagonal, thick, with character ===== -->
+          <!-- Branch shadow on ground -->
+          <ellipse cx="200" cy="282" rx="140" ry="6" fill="#3a3020" opacity="0.1"/>
+          <!-- Main branch body -->
+          <path d="M55 210 Q120 188 200 160 Q280 132 370 100" stroke="url(#we-branch)" stroke-width="32" fill="none" stroke-linecap="round"/>
+          <!-- Branch top highlight (round surface feel) -->
+          <path d="M60 206 Q125 184 205 156 Q280 128 365 96" stroke="url(#we-branch-top)" stroke-width="18" fill="none" stroke-linecap="round" opacity="0.5"/>
+          <!-- Elder bark texture — pale with distinctive lenticels (raised dots) -->
+          <g opacity="0.2">
+            <!-- Longitudinal bark cracks -->
+            <path d="M80 208 Q110 198 145 188 Q175 178 205 168" stroke="#5a4a38" stroke-width="0.7" fill="none"/>
+            <path d="M85 215 Q115 205 150 195 Q180 185 210 175" stroke="#5a4a38" stroke-width="0.5" fill="none"/>
+            <path d="M195 165 Q230 154 265 142 Q300 130 335 118" stroke="#5a4a38" stroke-width="0.6" fill="none"/>
+            <path d="M200 172 Q235 160 270 148 Q305 136 340 124" stroke="#5a4a38" stroke-width="0.4" fill="none"/>
+          </g>
+          <!-- Elder lenticels (small raised bumps on bark) -->
+          <g fill="#8a8070" opacity="0.25">
+            <ellipse cx="100" cy="202" rx="2" ry="1"/>
+            <ellipse cx="130" cy="193" rx="1.5" ry="0.8"/>
+            <ellipse cx="165" cy="182" rx="2" ry="1"/>
+            <ellipse cx="220" cy="160" rx="1.5" ry="0.8"/>
+            <ellipse cx="260" cy="146" rx="2" ry="1"/>
+            <ellipse cx="295" cy="133" rx="1.5" ry="0.8"/>
+            <ellipse cx="330" cy="120" rx="1.8" ry="0.9"/>
+          </g>
+          <!-- Small side twig (broken off) -->
+          <path d="M290 130 Q295 122 300 115" stroke="#6a6050" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="300" cy="115" rx="3" ry="3" fill="#5a5040"/>
+          <!-- ===== WOOD EAR FUNGI — realistic ear/cup shapes ===== -->
+          <g filter="url(#we-shadow)">
+            <!-- === EAR 1 (large, hero, hanging down-left from branch) === -->
+            <!-- Outer velvety surface visible on the back curl -->
+            <path d="M148 178 Q135 174 128 182 Q122 192 125 205 Q128 215 135 220" fill="url(#we-ear-outer)"/>
+            <!-- Main ear cup — concave inner surface facing viewer -->
+            <path d="M148 178 Q138 185 132 198 Q128 212 135 226
+                     Q142 238 158 240 Q172 238 182 228
+                     Q190 216 188 200 Q185 186 178 178
+                     Q168 170 148 178 Z" fill="url(#we-ear-inner)"/>
+            <!-- Concentric folds/wrinkles on inner surface (key realistic detail) -->
+            <g stroke="#4a2818" fill="none" opacity="0.3">
+              <path d="M148 185 Q140 192 138 205 Q137 215 142 225 Q148 232 158 234" stroke-width="0.7"/>
+              <path d="M152 190 Q145 196 143 206 Q142 215 146 222 Q150 228 158 230" stroke-width="0.6"/>
+              <path d="M156 195 Q150 200 148 208 Q148 216 150 220 Q154 225 160 226" stroke-width="0.5"/>
+              <path d="M160 198 Q156 203 155 210 Q155 216 157 219" stroke-width="0.4"/>
+            </g>
+            <!-- Veins radiating from attachment point -->
+            <g stroke="#5a3020" fill="none" opacity="0.2">
+              <path d="M168 178 Q155 195 145 218" stroke-width="0.6"/>
+              <path d="M170 180 Q162 200 158 225" stroke-width="0.5"/>
+              <path d="M172 182 Q170 205 172 230" stroke-width="0.5"/>
+              <path d="M175 180 Q178 202 180 222" stroke-width="0.4"/>
+            </g>
+            <!-- Wet translucent jelly glow -->
+            <path d="M148 185 Q142 195 140 210 Q140 222 148 232 Q155 225 152 210 Q150 195 148 185 Z" fill="url(#we-jelly)"/>
+            <!-- Glossy wet highlight -->
+            <ellipse cx="150" cy="200" rx="10" ry="14" fill="url(#we-gloss)"/>
+            <!-- Rim highlight (thin wavy edge catches light) -->
+            <path d="M135 226 Q142 238 158 240 Q172 238 182 228" stroke="#9a7860" stroke-width="0.6" fill="none" opacity="0.3"/>
+
+            <!-- === EAR 2 (medium, right-center, more upright cup) === -->
+            <path d="M232 142 Q222 138 216 144 Q212 152 214 164" fill="url(#we-ear-outer)"/>
+            <path d="M232 142 Q224 148 220 160
+                     Q218 174 224 185 Q230 194 244 196
+                     Q256 194 264 184 Q270 172 268 158
+                     Q264 146 256 140 Q246 136 232 142 Z" fill="url(#we-ear-inner)"/>
+            <!-- Inner wrinkles -->
+            <g stroke="#4a2818" fill="none" opacity="0.28">
+              <path d="M234 150 Q227 158 225 168 Q224 178 228 186 Q233 192 242 194" stroke-width="0.6"/>
+              <path d="M238 155 Q232 162 230 170 Q230 178 233 184 Q236 188 242 190" stroke-width="0.5"/>
+              <path d="M242 158 Q238 164 236 172 Q236 178 238 182" stroke-width="0.4"/>
+            </g>
+            <!-- Veins from attachment -->
+            <g stroke="#5a3020" fill="none" opacity="0.18">
+              <path d="M248 142 Q238 158 230 180" stroke-width="0.5"/>
+              <path d="M250 144 Q245 165 244 188" stroke-width="0.4"/>
+              <path d="M252 146 Q254 168 258 186" stroke-width="0.4"/>
+            </g>
+            <ellipse cx="236" cy="165" rx="8" ry="11" fill="url(#we-gloss)"/>
+            <path d="M224 185 Q230 194 244 196 Q256 194 264 184" stroke="#9a7860" stroke-width="0.5" fill="none" opacity="0.25"/>
+
+            <!-- === EAR 3 (small, upper right, younger specimen) === -->
+            <path d="M305 114 Q298 110 293 114 Q290 120 292 130" fill="url(#we-ear-outer)" opacity="0.8"/>
+            <path d="M305 114 Q298 118 295 128
+                     Q294 138 298 146 Q304 152 314 152
+                     Q322 150 326 142 Q328 132 324 122
+                     Q320 114 312 112 Q308 112 305 114 Z" fill="url(#we-ear-inner)"/>
+            <!-- Inner wrinkles -->
+            <g stroke="#4a2818" fill="none" opacity="0.25">
+              <path d="M306 120 Q300 126 298 134 Q298 142 302 148" stroke-width="0.5"/>
+              <path d="M309 124 Q304 130 303 136 Q303 142 306 146" stroke-width="0.4"/>
+            </g>
+            <ellipse cx="304" cy="132" rx="5" ry="7" fill="url(#we-gloss)"/>
+
+            <!-- === EAR 4 (tiny baby, between ear 1 and 2, just emerging) === -->
+            <path d="M195 170 Q190 168 188 172 Q186 178 188 186
+                     Q190 192 196 194 Q202 192 206 186
+                     Q208 178 205 172 Q202 168 195 170 Z" fill="url(#we-ear-inner)" opacity="0.7"/>
+            <path d="M196 174 Q192 178 191 184 Q192 189 195 192" stroke="#4a2818" stroke-width="0.4" fill="none" opacity="0.2"/>
+
+            <!-- === EAR 5 (tiny, far left on branch, partially behind) === -->
+            <path d="M100 204 Q95 202 92 206 Q90 212 92 220
+                     Q94 226 100 228 Q106 226 110 220
+                     Q112 212 109 206 Q106 202 100 204 Z" fill="url(#we-ear-inner)" opacity="0.6"/>
+            <path d="M101 208 Q96 212 95 218 Q96 224 99 226" stroke="#4a2818" stroke-width="0.35" fill="none" opacity="0.2"/>
+          </g>
+          <!-- Lichen spots on branch (greenish-grey circles) -->
+          <g opacity="0.3">
+            <circle cx="115" cy="198" r="5" fill="#8a9a78"/>
+            <circle cx="118" cy="195" r="3" fill="#9aaa88" opacity="0.6"/>
+            <circle cx="340" cy="110" r="4" fill="#8a9a78"/>
+            <circle cx="343" cy="107" r="2.5" fill="#9aaa88" opacity="0.5"/>
+          </g>
+          <!-- Green moss on branch -->
+          <g opacity="0.4">
+            <circle cx="78" cy="210" r="4" fill="#4a8a2a"/>
+            <circle cx="84" cy="207" r="3" fill="#5a9a3a"/>
+            <circle cx="355" cy="100" r="3.5" fill="#4a8a2a"/>
+            <circle cx="360" cy="97" r="2.5" fill="#5a9a3a"/>
+          </g>
+        </svg>
+      SVG
+    },
+    "field_mushroom" => {
+      name: "Field Mushroom",
+      name_ro: "Champignon sălbatic",
+      latin: "Agaricus campestris",
+      description: "Cream-white caps with pink-then-chocolate gills dot morning meadows after summer rainstorms. The wild ancestor of the cultivated button mushroom, richer in earthy woodland fragrance.",
+      description_ro: "Pălării alb-crem cu lamele roz apoi ciocolatii punctează pajiștile dimineții după furtunile de vară. Strămoșul sălbatic al ciupercii de cultură, mai bogat în aromă pământoasă.",
+      season_months: [6, 7, 8, 9, 10, 11],
+      temp_range: { ideal_min: 13, ideal_max: 20, abs_min: 8, abs_max: 28 },
+      rain_range: { ideal_min: 10, ideal_max: 25, abs_min: 5, abs_max: 40 },
+      delay_days: { ideal_min: 2, ideal_max: 5, abs_min: 1, abs_max: 10 },
+      # Grassland species, responds to warm rain on soil.
+      # 5-day window captures the rain+warmth combination that triggers flushes.
+      temp_window: 5,
+      # Classic meadow mushroom — needs open grassland, not forest.
+      preferred_terrain: { ideal: ["grassland", "farmland", "park"], partial: ["orchard", "scrubland"], bad: ["deciduous", "coniferous", "mixed", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:clearing)} Open meadows and maintained pastures only — avoid woodland",
+        "#{IconHelper.icon(:storm)} Hunt 2-5 days after warm rain over 15mm — triggers synchronized flushes",
+        "#{IconHelper.icon(:sunrise)} Morning ritual — forage before 9 AM when dew keeps flesh firm",
+        "#{IconHelper.icon(:sparkle)} Pink gill check — young ones have pink gills, older turn chocolate brown",
+        "#{IconHelper.icon(:hand_pick)} Press the cap gently — intact veil underneath means prime condition",
+        "#{IconHelper.icon(:amanita)} Careful: never confuse with yellow-staining Agaricus xanthodermus",
+        "#{IconHelper.icon(:sun)} August-October peak in Romania as summer heat gives way to cool damp weather"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:clearing)} Doar pajiști deschise și pășuni întreținute — evită pădurile",
+        "#{IconHelper.icon(:storm)} Caută la 2-5 zile după ploaie caldă peste 15mm — declanșează apariția sincronizată",
+        "#{IconHelper.icon(:sunrise)} Ritual matinal — culege înainte de ora 9 când roua păstrează carnea fermă",
+        "#{IconHelper.icon(:sparkle)} Verifică lamelele roz — cele tinere au lamele roz, cele vechi devin ciocolatii",
+        "#{IconHelper.icon(:hand_pick)} Apasă ușor pe pălărie — vălul intact dedesubt înseamnă stare perfectă",
+        "#{IconHelper.icon(:amanita)} Atenție: nu confunda cu Agaricus xanthodermus care se îngălbenește la tăiere",
+        "#{IconHelper.icon(:sun)} Vârf august-octombrie în România când căldura verii cedează vremii reci și umede"
+      ],
+      color: "#F5DEB3",
+      gradient_from: "#FFFAF0",
+      gradient_to: "#C4A872",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Agaricus_campestris_051011A.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Agaricus_campestris_garden_050830B.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Field_mushrooms_(Agaricus_Campestris)_-_geograph.org.uk_-_604856.jpg?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="fm-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b8d4e8"/>
+              <stop offset="40%" stop-color="#90c890"/>
+              <stop offset="100%" stop-color="#6a9a50"/>
+            </linearGradient>
+            <radialGradient id="fm-cap" cx="0.45" cy="0.3" r="0.6">
+              <stop offset="0%" stop-color="#FFFFF0"/>
+              <stop offset="60%" stop-color="#F5E8D0"/>
+              <stop offset="100%" stop-color="#E0CCA8"/>
+            </radialGradient>
+            <linearGradient id="fm-stem" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#E8DCC8"/>
+              <stop offset="30%" stop-color="#F8F0E4"/>
+              <stop offset="70%" stop-color="#F5ECD8"/>
+              <stop offset="100%" stop-color="#E0D0B8"/>
+            </linearGradient>
+            <linearGradient id="fm-gills" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#E8A0B0"/>
+              <stop offset="100%" stop-color="#C87888"/>
+            </linearGradient>
+            <filter id="fm-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#fm-bg)"/>
+          <!-- Grass meadow ground -->
+          <ellipse cx="200" cy="278" rx="240" ry="30" fill="#5a8a38" opacity="0.3"/>
+          <!-- Grass blades -->
+          <g stroke="#4a7a2a" fill="none" opacity="0.4">
+            <path d="M60 275 Q62 260 58 248" stroke-width="1.5"/>
+            <path d="M65 275 Q67 262 70 250" stroke-width="1.2"/>
+            <path d="M120 278 Q118 265 122 254" stroke-width="1.3"/>
+            <path d="M125 278 Q127 266 124 256" stroke-width="1.1"/>
+            <path d="M270 276 Q268 264 272 254" stroke-width="1.4"/>
+            <path d="M275 276 Q277 265 274 256" stroke-width="1.1"/>
+            <path d="M335 274 Q333 262 337 252" stroke-width="1.3"/>
+            <path d="M340 275 Q342 264 339 255" stroke-width="1.1"/>
+          </g>
+          <!-- Main field mushroom -->
+          <g filter="url(#fm-shadow)">
+            <!-- Stem -->
+            <path d="M186 274 Q182 258 182 238 Q182 220 185 208 Q187 202 192 198 L208 198 Q213 202 215 208 Q218 220 218 238 Q218 258 214 274 Z" fill="url(#fm-stem)"/>
+            <!-- Ring/annulus on stem -->
+            <ellipse cx="200" cy="218" rx="15" ry="3" fill="#F0E4D0" stroke="#D8C8A8" stroke-width="0.5"/>
+            <!-- Gills (pink) -->
+            <ellipse cx="200" cy="196" rx="70" ry="8" fill="url(#fm-gills)"/>
+            <g stroke="#B06878" stroke-width="0.4" fill="none" opacity="0.3">
+              <line x1="145" y1="196" x2="255" y2="196"/>
+              <line x1="150" y1="194" x2="250" y2="194"/>
+              <line x1="148" y1="198" x2="252" y2="198"/>
+            </g>
+            <!-- Cap — broad dome, white/cream -->
+            <path d="M125 192 Q128 160 150 140 Q175 122 200 118 Q225 122 250 140 Q272 160 275 192 Z" fill="url(#fm-cap)"/>
+            <!-- Cap smooth sheen -->
+            <path d="M155 138 Q175 125 200 122 Q215 123 228 128 Q210 122 190 130 Q168 142 158 160 Z" fill="#FFFFFF" opacity="0.2"/>
+            <!-- Cap edge shadow -->
+            <path d="M255 145 Q268 158 273 180 Q274 188 275 192" stroke="#C8B898" stroke-width="0.8" fill="none" opacity="0.3"/>
+          </g>
+          <!-- Small background mushrooms -->
+          <g opacity="0.35">
+            <g transform="translate(90, 245) scale(0.3)">
+              <path d="M-8 50 Q-6 25 -4 10 L4 10 Q6 25 8 50 Z" fill="#F0E4D0"/>
+              <path d="M-25 8 Q-15 -12 0 -16 Q15 -12 25 8 Z" fill="#F5E8D0"/>
+            </g>
+            <g transform="translate(310, 240) scale(0.25)">
+              <path d="M-8 50 Q-6 25 -4 10 L4 10 Q6 25 8 50 Z" fill="#F0E4D0"/>
+              <path d="M-25 8 Q-15 -12 0 -16 Q15 -12 25 8 Z" fill="#F5E8D0"/>
+            </g>
+          </g>
+        </svg>
+      SVG
+    },
+    "black_trumpet" => {
+      name: "Black Trumpet",
+      name_ro: "Trâmbița piticului",
+      latin: "Craterellus cornucopioides",
+      description: "Dark funnel-shaped phantoms emerge from mossy beech and oak leaf litter in cool autumns. Prized by chefs for their subtle truffle-like depth and delicate, smoky aroma.",
+      description_ro: "Fantome întunecate în formă de pâlnie apar din litiera de frunze cu mușchi de fag și stejar în toamnele reci. Apreciate de bucătari pentru profunzimea subtilă de trufe și aroma delicată, afumată.",
+      season_months: [7, 8, 9, 10, 11],
+      temp_range: { ideal_min: 13, ideal_max: 18, abs_min: 8, abs_max: 21 },
+      rain_range: { ideal_min: 12, ideal_max: 30, abs_min: 10, abs_max: 50 },
+      delay_days: { ideal_min: 5, ideal_max: 12, abs_min: 3, abs_max: 21 },
+      # Slow to fruit — needs sustained cool moisture.
+      # 5-day window captures the prolonged damp needed.
+      temp_window: 5,
+      # Deep forest species, beech and oak litter.
+      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "scrubland"], bad: ["grassland", "farmland", "wetland", "park", "orchard", "water"] },
+      tips: [
+        "#{IconHelper.icon(:moss)} Follow moss patches in beech and oak groves — black trumpets hide in damp leaf litter",
+        "#{IconHelper.icon(:rain_heavy)} Need sustained rain — hunt 5-12 days after 15mm+ rainfall for best results",
+        "#{IconHelper.icon(:fallen_leaf)} Scrape gently through leaves — they hide under 5cm of leaf cover",
+        "#{IconHelper.icon(:hand_pick)} Completely hollow inside — break one to confirm, solid cores are a different species",
+        "#{IconHelper.icon(:sparkle)} Dried trumpets smell intensely fruity and aromatic — scentless ones are fakes",
+        "#{IconHelper.icon(:umbrella)} Handle gently in baskets with paper — thin walls shatter in plastic bags",
+        "#{IconHelper.icon(:map_pin)} September-October peak — plan foraging when cool rain and 13-18°C temps align"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:moss)} Urmărește petele de mușchi în păduri de fag și stejar — trompetele se ascund în litieră umedă",
+        "#{IconHelper.icon(:rain_heavy)} Necesită ploaie susținută — caută la 5-12 zile după 15mm+ pentru cele mai bune rezultate",
+        "#{IconHelper.icon(:fallen_leaf)} Curăță ușor prin frunze — se ascund sub 5cm de acoperire de frunze",
+        "#{IconHelper.icon(:hand_pick)} Complet gol pe interior — rupe una pentru a confirma, nucleele solide sunt altă specie",
+        "#{IconHelper.icon(:sparkle)} Trompetele uscate au miros intens fructat și aromatic — cele fără miros sunt false",
+        "#{IconHelper.icon(:umbrella)} Manipulează ușor în coșuri cu hârtie — pereții subțiri se sfărâmă în pungi de plastic",
+        "#{IconHelper.icon(:map_pin)} Vârf septembrie-octombrie — planifică când ploaia rece și temperaturile de 13-18°C se aliniază"
+      ],
+      color: "#2C2C2C",
+      gradient_from: "#4A4A4A",
+      gradient_to: "#0A0A0A",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Craterellus_cornucopioides_a1.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Craterellus_cornucopioides_Eestis.JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/0_Craterellus_cornucopioides_-_Trompette_de_la_mort_(2).JPG?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bt-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7a8a68"/>
+              <stop offset="40%" stop-color="#6a7a58"/>
+              <stop offset="70%" stop-color="#5a6848"/>
+              <stop offset="100%" stop-color="#4a4030"/>
+            </linearGradient>
+            <linearGradient id="bt-body" x1="0.3" y1="1" x2="0.7" y2="0">
+              <stop offset="0%" stop-color="#1a1a1a"/>
+              <stop offset="40%" stop-color="#2c2c2c"/>
+              <stop offset="100%" stop-color="#484848"/>
+            </linearGradient>
+            <linearGradient id="bt-inner" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#0a0a0a"/>
+              <stop offset="100%" stop-color="#282828"/>
+            </linearGradient>
+            <radialGradient id="bt-shine" cx="0.35" cy="0.3" r="0.5">
+              <stop offset="0%" stop-color="#606060" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#2c2c2c" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="bt-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#bt-bg)"/>
+          <!-- Forest floor -->
+          <ellipse cx="200" cy="282" rx="220" ry="28" fill="#4a4028" opacity="0.25"/>
+          <ellipse cx="200" cy="278" rx="200" ry="18" fill="#5a5030" opacity="0.2"/>
+          <!-- Moss carpet -->
+          <g opacity="0.38">
+            <circle cx="65" cy="273" r="9" fill="#3a7a1a"/>
+            <circle cx="78" cy="270" r="6" fill="#4a8a2a"/>
+            <circle cx="58" cy="276" r="5" fill="#2a6a10"/>
+            <circle cx="90" cy="271" r="4" fill="#4a8a2a"/>
+            <circle cx="330" cy="271" r="8" fill="#3a7a1a"/>
+            <circle cx="342" cy="268" r="6" fill="#4a8a2a"/>
+            <circle cx="322" cy="274" r="5" fill="#2a6a10"/>
+            <circle cx="352" cy="272" r="4" fill="#4a8a2a"/>
+            <circle cx="150" cy="276" r="5" fill="#3a7a1a"/>
+            <circle cx="245" cy="275" r="6" fill="#3a7a1a"/>
+            <circle cx="255" cy="273" r="4" fill="#4a8a2a"/>
+          </g>
+          <!-- Fallen beech leaves -->
+          <path d="M100 270 Q112 262 120 268 Q114 256 104 258 Q96 262 100 270 Z" fill="#7a6828" opacity="0.35"/>
+          <line x1="100" y1="270" x2="115" y2="260" stroke="#6a5820" stroke-width="0.5" opacity="0.3"/>
+          <path d="M290 268 Q300 260 310 266 Q304 256 296 258 Q288 262 290 268 Z" fill="#6a5820" opacity="0.3"/>
+          <!-- Small twigs -->
+          <line x1="170" y1="278" x2="195" y2="274" stroke="#5a5030" stroke-width="1" opacity="0.25"/>
+          <line x1="210" y1="277" x2="235" y2="273" stroke="#5a5030" stroke-width="0.8" opacity="0.2"/>
+          <!-- Main black trumpet with shadow (chanterelle-style funnel) -->
+          <g filter="url(#bt-shadow)">
+            <!-- Stem - tapers from narrow base to wide funnel -->
+            <path d="M192 278 Q188 262 186 245 Q184 228 183 215 Q182 202 184 192 L216 192 Q218 202 217 215 Q216 228 214 245 Q212 262 208 278 Z" fill="url(#bt-body)"/>
+            <!-- Stem texture (vertical ridges like chanterelle) -->
+            <path d="M194 275 Q193 258 192 238 Q192 218 193 198" stroke="#3a3a3a" stroke-width="0.6" fill="none" opacity="0.35"/>
+            <path d="M200 278 Q200 255 200 235 Q200 215 200 195" stroke="#3a3a3a" stroke-width="0.5" fill="none" opacity="0.3"/>
+            <path d="M206 275 Q207 258 208 238 Q208 218 207 198" stroke="#3a3a3a" stroke-width="0.6" fill="none" opacity="0.35"/>
+            <!-- Left stem shadow -->
+            <path d="M192 278 Q188 262 186 245 Q184 228 183 215 Q182 202 184 192 L190 192 Q188 205 188 218 Q188 235 190 252 Q191 265 194 278 Z" fill="#0a0a0a" opacity="0.2"/>
+            <!-- Funnel/trumpet cap — organic wavy edges (like chanterelle shape) -->
+            <path d="M184 192 Q178 178 168 162 Q158 148 142 132 Q134 124 124 118
+                     L128 112 Q140 118 150 128 Q162 140 172 156
+                     Q180 145 190 136 Q198 128 200 124
+                     Q202 128 210 136 Q220 145 228 156
+                     Q238 140 250 128 Q260 118 272 112
+                     L276 118 Q266 124 258 132 Q242 148 232 162 Q222 178 216 192 Z"
+                  fill="url(#bt-body)"/>
+            <!-- Cap highlight (left side light) -->
+            <path d="M184 192 Q178 178 168 162 Q158 148 142 132 Q134 124 124 118
+                     L128 112 Q140 118 150 128 Q160 140 168 152 Q172 148 176 155 Q180 145 188 136 Q196 128 200 124
+                     Q198 130 192 140 Q186 152 182 168 Q180 178 184 192 Z"
+                  fill="url(#bt-shine)"/>
+            <!-- False gill ridges running down from cap edge (like chanterelle but dark) -->
+            <g stroke="#444" fill="none" opacity="0.4">
+              <!-- Left side ridges -->
+              <path d="M186 192 Q180 175 170 158 Q162 145 150 132" stroke-width="0.9"/>
+              <path d="M188 192 Q184 178 176 164 Q170 152 160 140" stroke-width="0.8"/>
+              <path d="M190 192 Q188 180 183 168 Q178 156 170 146" stroke-width="0.7"/>
+              <path d="M193 192 Q192 180 189 170 Q186 160 180 150" stroke-width="0.7"/>
+              <path d="M196 192 Q196 178 194 168 Q192 158 188 148" stroke-width="0.6"/>
+              <!-- Right side ridges -->
+              <path d="M214 192 Q220 175 230 158 Q238 145 250 132" stroke-width="0.9"/>
+              <path d="M212 192 Q216 178 224 164 Q230 152 240 140" stroke-width="0.8"/>
+              <path d="M210 192 Q212 180 217 168 Q222 156 230 146" stroke-width="0.7"/>
+              <path d="M207 192 Q208 180 211 170 Q214 160 220 150" stroke-width="0.7"/>
+              <path d="M204 192 Q204 178 206 168 Q208 158 212 148" stroke-width="0.6"/>
+              <!-- Ridge forks -->
+              <path d="M170 158 Q166 152 158 144" stroke-width="0.5"/>
+              <path d="M176 164 Q174 160 168 154" stroke-width="0.5"/>
+              <path d="M230 158 Q234 152 242 144" stroke-width="0.5"/>
+              <path d="M224 164 Q226 160 232 154" stroke-width="0.5"/>
+            </g>
+            <!-- Wavy cap edge detail -->
+            <path d="M124 118 Q128 114 128 112" stroke="#383838" stroke-width="1" fill="none" opacity="0.3"/>
+            <path d="M276 118 Q274 114 272 112" stroke="#383838" stroke-width="1" fill="none" opacity="0.3"/>
+            <!-- Cap outer edge shadow (right side) -->
+            <path d="M228 156 Q238 140 250 128 Q260 118 272 112
+                     L276 118 Q266 124 258 132 Q246 144 236 158 Q226 172 220 186 Z"
+                  fill="#000" opacity="0.15"/>
+          </g>
+          <!-- Grass tufts -->
+          <path d="M135 276 Q137 264 133 254" stroke="#3a7a1a" stroke-width="1.4" fill="none" opacity="0.4"/>
+          <path d="M139 277 Q140 266 143 256" stroke="#4a8a2a" stroke-width="1.1" fill="none" opacity="0.35"/>
+          <path d="M260 275 Q258 264 262 255" stroke="#3a7a1a" stroke-width="1.3" fill="none" opacity="0.35"/>
+          <path d="M264 276 Q266 265 263 256" stroke="#4a8a2a" stroke-width="1" fill="none" opacity="0.3"/>
+          <!-- Fern frond -->
+          <g opacity="0.25" transform="translate(310, 248) scale(0.6)">
+            <path d="M0 40 Q10 30 20 20 Q30 10 40 0" stroke="#3a7a1a" stroke-width="1.5" fill="none"/>
+            <path d="M8 34 Q4 28 0 30" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+            <path d="M14 28 Q10 22 6 24" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+            <path d="M20 22 Q16 16 12 18" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+            <path d="M16 30 Q20 24 24 28" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+            <path d="M22 24 Q26 18 30 22" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+            <path d="M28 18 Q32 12 36 16" stroke="#3a7a1a" stroke-width="0.8" fill="none"/>
+          </g>
+        </svg>
+      SVG
+    },
+    "amethyst_deceiver" => {
+      name: "Amethyst Deceiver",
+      name_ro: "Amăgitoare de ametist",
+      latin: "Laccaria amethystina",
+      description: "Diminutive vivid purple caps carpet damp oak and beech litter in cool autumns. Easily overlooked, but keen-eyed foragers find them in prolific fairy rings and dense clusters.",
+      description_ro: "Pălării micuțe de un violet intens acoperă litiera umedă de stejar și fag în toamnele reci. Ușor de trecut cu vederea, dar culegătorii atenți le găsesc în cercuri de zâne și grupuri dense.",
+      season_months: [8, 9, 10, 11],
+      temp_range: { ideal_min: 11, ideal_max: 17, abs_min: 6, abs_max: 20 },
+      rain_range: { ideal_min: 10, ideal_max: 25, abs_min: 5, abs_max: 40 },
+      delay_days: { ideal_min: 4, ideal_max: 10, abs_min: 2, abs_max: 18 },
+      # Mycorrhizal with oaks and beeches — responds to soil moisture.
+      # 4-day temp window as small fruiting bodies appear quickly.
+      temp_window: 4,
+      # Deciduous woodland, especially oak and beech with rich humus.
+      preferred_terrain: { ideal: ["deciduous", "mixed"], partial: ["coniferous", "park", "scrubland"], bad: ["grassland", "farmland", "orchard", "wetland", "water"] },
+      tips: [
+        "#{IconHelper.icon(:sparkle)} Spot one, find hundreds — they fruit in dense fairy rings and clusters",
+        "#{IconHelper.icon(:tree_deciduous)} Oak, beech, and birch woods with acidic humus-rich soil",
+        "#{IconHelper.icon(:hand_pick)} Harvest caps 1-3cm diameter — smaller specimens are sweeter and more tender",
+        "#{IconHelper.icon(:rain_heavy)} Peak after weeks of steady September-October rainfall with cool nights",
+        "#{IconHelper.icon(:moss)} Look where moss meets leaf litter — the damp transition zone is prime",
+        "#{IconHelper.icon(:blossom)} Vivid purple colour is unique — fading to brownish signals drying out",
+        "#{IconHelper.icon(:map_pin)} Hunt 4-10 days after significant rain when soil moisture stabilizes"
+      ],
+      tips_ro: [
+        "#{IconHelper.icon(:sparkle)} Găsești una, găsești sute — fructifică în cercuri de zâne și grupuri dense",
+        "#{IconHelper.icon(:tree_deciduous)} Păduri de stejar, fag și mesteacăn cu sol acid bogat în humus",
+        "#{IconHelper.icon(:hand_pick)} Recoltează pălării de 1-3cm diametru — specimenele mici sunt mai dulci și fragede",
+        "#{IconHelper.icon(:rain_heavy)} Vârf după săptămâni de ploaie constantă septembrie-octombrie cu nopți reci",
+        "#{IconHelper.icon(:moss)} Caută unde mușchiul întâlnește litiera de frunze — zona umedă de tranziție este ideală",
+        "#{IconHelper.icon(:blossom)} Culoarea violet intens este unică — decolorarea la maro semnalează uscarea",
+        "#{IconHelper.icon(:map_pin)} Caută la 4-10 zile după ploaie semnificativă când umiditatea solului se stabilizează"
+      ],
+      color: "#9932CC",
+      gradient_from: "#C77CEB",
+      gradient_to: "#5B1B8E",
+      photos: [
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Amethyst_Deceiver_-_Laccaria_amethystea_-_Violetter_Lacktrichterling_-_Laccaria_amethystina_-_01.jpg?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Laccaria_amethystina_G4_(1).JPG?width=400" },
+        { url: "https://commons.wikimedia.org/wiki/Special:FilePath/Laccaria_amethystina.JPG?width=400" },
+      ],
+      svg: <<~SVG
+        <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ad-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a9a70"/>
+              <stop offset="40%" stop-color="#728860"/>
+              <stop offset="70%" stop-color="#5a6848"/>
+              <stop offset="100%" stop-color="#4a4030"/>
+            </linearGradient>
+            <linearGradient id="ad-cap1" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%" stop-color="#D8A0F8"/>
+              <stop offset="25%" stop-color="#C77CEB"/>
+              <stop offset="55%" stop-color="#9932CC"/>
+              <stop offset="100%" stop-color="#6A1B8E"/>
+            </linearGradient>
+            <linearGradient id="ad-cap2" x1="0.3" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="#D090F0"/>
+              <stop offset="40%" stop-color="#B060D8"/>
+              <stop offset="100%" stop-color="#7A28A8"/>
+            </linearGradient>
+            <linearGradient id="ad-stem1" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#A868C8"/>
+              <stop offset="25%" stop-color="#C890E8"/>
+              <stop offset="50%" stop-color="#D8A8F0"/>
+              <stop offset="75%" stop-color="#C088E0"/>
+              <stop offset="100%" stop-color="#9A60B8"/>
+            </linearGradient>
+            <linearGradient id="ad-stem2" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#B878D0"/>
+              <stop offset="50%" stop-color="#D09CE8"/>
+              <stop offset="100%" stop-color="#A870C0"/>
+            </linearGradient>
+            <linearGradient id="ad-gills" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#C890E8"/>
+              <stop offset="100%" stop-color="#9050B0"/>
+            </linearGradient>
+            <radialGradient id="ad-cap-shine" cx="0.35" cy="0.3" r="0.5">
+              <stop offset="0%" stop-color="#E8C0FF" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#9932CC" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="ad-dapple" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="#c8d8a0" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#c8d8a0" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="ad-shadow" x="-20%" y="-10%" width="140%" height="130%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+              <feOffset dx="3" dy="5"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.15"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="400" height="300" fill="url(#ad-bg)"/>
+          <!-- Dappled light -->
+          <ellipse cx="120" cy="55" rx="50" ry="35" fill="url(#ad-dapple)"/>
+          <ellipse cx="310" cy="50" rx="45" ry="30" fill="url(#ad-dapple)"/>
+          <!-- Forest floor -->
+          <ellipse cx="200" cy="285" rx="230" ry="28" fill="#4a3a25" opacity="0.25"/>
+          <ellipse cx="200" cy="280" rx="200" ry="18" fill="#5a4a30" opacity="0.2"/>
+          <!-- Fallen leaves -->
+          <g opacity="0.45">
+            <ellipse cx="75" cy="276" rx="14" ry="4.5" fill="#b87830" transform="rotate(-12 75 276)"/>
+            <ellipse cx="320" cy="278" rx="12" ry="4" fill="#c89830" transform="rotate(8 320 278)"/>
+            <ellipse cx="140" cy="280" rx="10" ry="3.5" fill="#c4a040" transform="rotate(-18 140 280)"/>
+            <ellipse cx="260" cy="275" rx="11" ry="4" fill="#a87828" transform="rotate(14 260 275)"/>
+            <ellipse cx="195" cy="282" rx="13" ry="4" fill="#a07028" transform="rotate(3 195 282)"/>
+          </g>
+          <!-- Moss patches -->
+          <g opacity="0.4">
+            <circle cx="60" cy="272" r="7" fill="#3a7a28"/>
+            <circle cx="70" cy="269" r="4" fill="#4a8a38"/>
+            <circle cx="340" cy="271" r="6" fill="#3a7a28"/>
+            <circle cx="350" cy="268" r="4" fill="#4a8a38"/>
+          </g>
+          <!-- ===== FAIRY RING OF AMETHYST DECEIVERS ===== -->
+          <g filter="url(#ad-shadow)">
+            <!-- === Mushroom A (center-left, hero, tallest) === -->
+            <path d="M178 278 Q175 258 174 242 Q174 228 177 218 Q179 212 184 208 L196 208 Q201 212 203 218 Q206 228 206 242 Q205 258 202 278 Z" fill="url(#ad-stem1)"/>
+            <g stroke="#9060B0" stroke-width="0.4" fill="none" opacity="0.25">
+              <path d="M183 270 Q182 250 183 230 Q183 218 185 212"/>
+              <path d="M190 274 Q190 252 190 232 Q190 218 190 210"/>
+              <path d="M197 270 Q198 250 197 230 Q197 218 195 212"/>
+            </g>
+            <ellipse cx="190" cy="206" rx="32" ry="5" fill="url(#ad-gills)"/>
+            <g stroke="#8040A0" stroke-width="0.3" fill="none" opacity="0.3">
+              <line x1="165" y1="205" x2="215" y2="205"/>
+              <line x1="168" y1="207" x2="212" y2="207"/>
+              <line x1="170" y1="203" x2="210" y2="203"/>
+            </g>
+            <path d="M155 202 Q158 178 170 164 Q180 154 190 151 Q200 154 210 164 Q222 178 225 202 Z" fill="url(#ad-cap1)"/>
+            <path d="M172 165 Q182 156 190 154 Q196 155 202 158 Q192 153 182 162 Q174 172 170 185 Z" fill="url(#ad-cap-shine)"/>
+            <path d="M165 185 Q180 175 190 172 Q200 175 215 185" stroke="#D8B0F8" stroke-width="0.5" fill="none" opacity="0.15"/>
+            <path d="M158 198 Q170 194 190 192 Q210 194 222 198" stroke="#6A1B8E" stroke-width="0.6" fill="none" opacity="0.25"/>
+
+            <!-- === Mushroom B (center-right, second tallest) === -->
+            <path d="M218 277 Q216 260 215 248 Q215 237 217 229 Q219 224 223 221 L233 221 Q237 224 239 229 Q241 237 241 248 Q240 260 238 277 Z" fill="url(#ad-stem2)"/>
+            <g stroke="#9060B0" stroke-width="0.35" fill="none" opacity="0.2">
+              <path d="M224 272 Q223 252 224 238 Q224 228 225 224"/>
+              <path d="M232 272 Q233 252 232 238 Q232 228 231 224"/>
+            </g>
+            <ellipse cx="228" cy="219" rx="26" ry="4" fill="url(#ad-gills)"/>
+            <path d="M199 216 Q203 196 213 185 Q221 178 228 176 Q235 178 243 185 Q253 196 257 216 Z" fill="url(#ad-cap2)"/>
+            <path d="M215 186 Q223 180 228 178 Q233 180 238 183 Q228 177 218 188 Z" fill="#D8A0F0" opacity="0.25"/>
+            <path d="M205 208 Q218 200 228 198 Q238 200 251 208" stroke="#D8B0F8" stroke-width="0.4" fill="none" opacity="0.12"/>
+
+            <!-- === Mushroom C (left, medium) === -->
+            <path d="M124 280 Q123 268 123 258 Q123 250 124 244 L132 244 Q133 250 133 258 Q133 268 132 280 Z" fill="url(#ad-stem1)"/>
+            <ellipse cx="128" cy="242" rx="20" ry="3.5" fill="url(#ad-gills)"/>
+            <path d="M106 240 Q110 224 120 216 Q126 213 128 212 Q130 213 136 216 Q146 224 150 240 Z" fill="url(#ad-cap1)"/>
+            <path d="M121 218 Q126 214 128 213 Q131 214 134 217 Q128 213 122 220 Z" fill="#D8A0F0" opacity="0.2"/>
+
+            <!-- === Mushroom D (right, medium) === -->
+            <path d="M278 279 Q276 268 276 260 Q276 254 277 248 L285 248 Q286 254 286 260 Q286 268 284 279 Z" fill="url(#ad-stem2)"/>
+            <ellipse cx="281" cy="246" rx="18" ry="3" fill="url(#ad-gills)"/>
+            <path d="M261 244 Q265 230 274 223 Q279 220 281 220 Q283 220 288 223 Q297 230 301 244 Z" fill="url(#ad-cap2)"/>
+            <path d="M275 225 Q279 221 281 221 Q284 222 287 225 Q281 220 276 227 Z" fill="#D8A0F0" opacity="0.2"/>
+
+            <!-- === Mushroom E (far left, small, young) === -->
+            <path d="M78 282 Q77 276 77 271 Q77 267 78 264 L84 264 Q85 267 85 271 Q85 276 84 282 Z" fill="url(#ad-stem1)"/>
+            <path d="M67 262 Q70 254 77 249 Q80 248 81 248 Q82 248 85 249 Q92 254 95 262 Z" fill="url(#ad-cap1)"/>
+
+            <!-- === Mushroom F (far right, small, young) === -->
+            <path d="M320 281 Q319 275 319 270 Q319 267 320 264 L326 264 Q327 267 327 270 Q327 275 326 281 Z" fill="url(#ad-stem2)"/>
+            <path d="M310 262 Q312 254 319 249 Q322 248 323 248 Q324 248 327 249 Q334 254 336 262 Z" fill="url(#ad-cap2)"/>
+
+            <!-- === Mushroom G (behind center, peeking, tiny) === -->
+            <path d="M200 272 Q199 267 199 263 Q199 261 200 259 L204 259 Q205 261 205 263 Q205 267 204 272 Z" fill="url(#ad-stem2)" opacity="0.6"/>
+            <path d="M193 258 Q195 252 200 249 Q202 248 202 248 Q204 249 207 252 Q209 258 Z" fill="url(#ad-cap1)" opacity="0.6"/>
+
+            <!-- === Mushroom H (between left and center, tiny baby) === -->
+            <path d="M152 282 Q151 278 151 275 Q151 273 152 271 L156 271 Q157 273 157 275 Q157 278 156 282 Z" fill="url(#ad-stem1)" opacity="0.5"/>
+            <path d="M146 270 Q148 265 152 263 Q154 262 154 262 Q156 263 158 265 Q160 270 Z" fill="url(#ad-cap2)" opacity="0.5"/>
+
+            <!-- === Mushroom I (between right and far right, tiny) === -->
+            <path d="M300 281 Q299 277 299 274 Q299 272 300 270 L304 270 Q305 272 305 274 Q305 277 304 281 Z" fill="url(#ad-stem2)" opacity="0.5"/>
+            <path d="M294 269 Q296 264 300 262 Q302 261 302 261 Q304 262 306 264 Q308 269 Z" fill="url(#ad-cap1)" opacity="0.5"/>
           </g>
         </svg>
       SVG
